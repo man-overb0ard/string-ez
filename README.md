@@ -26,4 +26,4 @@ As regras usam nível, objetivo e desconforto para selecionar famílias de corda
 
 A interface web pode futuramente ser empacotada com Capacitor para Android/iOS. Esse empacotamento ainda não está implementado.
 
-O catálogo inicial em `src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince e Pro Kennex. Marcas e linhas fora da lista permitem digitação do modelo; modelos não listados têm opção “Outro modelo / não sei”. O catálogo não diferencia gerações nem fornece especificações técnicas. Trocar a marca limpa linha e modelo; trocar a linha limpa o modelo.
+O catálogo inicial em `src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince e Pro Kennex, com padrões por modelo. Não há opções “não sei”: a identificação exige marca, linha e modelo do catálogo. Para um padrão único, a pergunta é suprimida e o padrão entra automaticamente no resumo. Para múltiplos padrões, o usuário escolhe entre as variantes cadastradas. Trocar marca, linha ou modelo limpa o padrão anterior. Algumas variantes abrangem gerações diferentes: o catálogo ainda precisa de revisão e segmentação por ano antes de ser considerado completo.

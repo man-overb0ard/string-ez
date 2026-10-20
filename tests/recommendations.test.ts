@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { recommend, type Answers } from '../src/recommendations.ts'
-const base: Answers = {level:'Intermediário', racket:'Não sei', pattern:'16 × 19', previous:'Poliéster', tension:'50 lb', goal:'Controle', pain:'Não'}
+import { getPatterns } from '../src/rackets.ts'
+const base: Answers = {level:'Intermediário', racket:'VCORE 98', pattern:'16 × 19', previous:'Poliéster', tension:'50 lb', goal:'Controle', pain:'Não'}
 describe('recomendações', () => {
   it('retorna três opções distintas para cada perfil e prioriza conforto para iniciantes ou desconforto', () => {
     for (const level of ['Iniciante','Intermediário','Avançado']) for (const pain of ['Sim','Não']) for (const goal of ['Conforto','Controle','Potência','Efeito (spin)','Durabilidade']) {
@@ -17,5 +18,16 @@ describe('recomendações', () => {
   it('oferece copoliéster para controle e calibre maior para durabilidade em perfil experiente sem dor', () => {
     assert.equal(recommend(base)[0].material, 'Copoliéster')
     assert.equal(recommend({...base, goal:'Durabilidade'})[0].gauge, '1,30 mm')
+  })
+})
+
+// A pergunta depende das variantes do modelo, nunca de uma lista global de padrões.
+describe('padrões por modelo', () => {
+  it('identifica modelos de padrão único e variantes de um mesmo modelo', () => {
+    assert.deepEqual(getPatterns('Yonex', 'VCORE', '98'), ['16 × 19'])
+    assert.deepEqual(getPatterns('Wilson', 'Blade', '98'), ['16 × 19', '18 × 20'])
+    assert.deepEqual(getPatterns('Wilson', 'Blade', '100'), ['16 × 19'])
+    assert.deepEqual(getPatterns('Babolat', 'Pure Strike', '98'), ['16 × 19', '18 × 20'])
+    assert.deepEqual(getPatterns('Marca inexistente', 'Linha', 'Modelo'), [])
   })
 })
