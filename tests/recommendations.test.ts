@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { factors, recommend, recommendationText, type Answers } from '../src/recommendations.ts'
+import { stringCatalog, specifyString, findString, resolveStringMaterial } from '../src/stringCatalog.ts'
 import { getPatterns } from '../src/rackets.ts'
 const base: Answers = { level: 'Intermediário', racket: 'VCORE 98', pattern: '16 × 19', previous: 'Poliéster', tension: '50 lb', goal: 'Controle', pain: 'Não', layout: 'Full bed', liked: [] }
 
@@ -93,5 +94,30 @@ describe('padrões por modelo', () => {
     assert.deepEqual(getPatterns('Wilson', 'Blade', '100'), ['16 × 19'])
     assert.deepEqual(getPatterns('Babolat', 'Pure Strike', '98'), ['16 × 19', '18 × 20'])
     assert.deepEqual(getPatterns('Marca inexistente', 'Linha', 'Modelo'), [])
+  })
+})
+
+
+describe('identificação da corda atual', () => {
+  it('mantém o caminho por material e identifica materiais pelos modelos especificados', () => {
+    assert.equal(resolveStringMaterial('Multifilamento', '', ''), 'Multifilamento')
+    assert.equal(resolveStringMaterial(specifyString, 'Solinco', 'Hyper-G'), 'Poliéster')
+    assert.equal(resolveStringMaterial(specifyString, 'HEAD', 'Velocity MLT'), 'Multifilamento')
+    assert.equal(resolveStringMaterial(specifyString, 'Babolat', 'Touch VS'), 'Tripa natural')
+    assert.equal(resolveStringMaterial(specifyString, 'Prince', 'Synthetic Gut with Duraflex'), 'Synthetic gut (nylon)')
+    assert.equal(resolveStringMaterial(specifyString, 'Yonex', 'Hyper-G'), '')
+  })
+  it('inclui as marcas solicitadas com modelos únicos e materiais classificados', () => {
+    for (const brand of ['Solinco','Yonex','Babolat','Tecnifibre','HEAD','Signum Pro','Robin Söderling (RS)']) assert.ok(stringCatalog[brand]?.length)
+    for (const entries of Object.values(stringCatalog)) {
+      assert.equal(new Set(entries.map(e => e.model)).size, entries.length)
+      assert.ok(entries.every(e => ['Poliéster','Multifilamento','Synthetic gut (nylon)','Tripa natural'].includes(e.material)))
+    }
+  })
+  it('resolve mains e crosses de marcas diferentes sem confundir o material usado no cálculo', () => {
+    const detailed: Answers = { ...base, layout: 'Híbrido', mains: resolveStringMaterial(specifyString, 'Solinco', 'Hyper-G'), crosses: resolveStringMaterial(specifyString, 'HEAD', 'Velocity MLT'), mainsTension: '52 lb', crossesTension: '50 lb' }
+    const generic = { ...detailed, mains: 'Poliéster', crosses: 'Multifilamento' }
+    assert.deepEqual(recommend(detailed), recommend(generic))
+    assert.equal(findString('Signum Pro', 'Tornado')?.material, 'Poliéster')
   })
 })

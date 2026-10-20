@@ -49,3 +49,9 @@ A tensão parte do histórico informado por direção. As regras consideram obje
 Os testes em `tests/recommendations.test.ts` cobrem configurações únicas, produtos/tensões, filtros por dor/experiência, influência dos fatores preservados, transição para híbrido, cálculo por direção, limites, histórico inválido e padrões de raquetes. O teste combinado percorre 480 perfis.
 
 O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção múltipla, cartela, voltar, resumo e clipboard. O projeto pode futuramente ser empacotado com Capacitor para Android/iOS; isso ainda não está implementado.
+
+## Identificar marca e modelo da corda atual
+
+Em cada seleção de tipo de corda, “Quero especificar” abre marca → modelo. O catálogo em `src/stringCatalog.ts` inclui Solinco, Yonex, Babolat, Tecnifibre, HEAD, Signum Pro, Robin Söderling (RS), Luxilon, Wilson, Prince, Kirschbaum, MSV, Dunlop e Tourna. É um catálogo inicial de identificação, não um ranking de vendas, nem garantia de disponibilidade no Brasil. Ele não cobre todos os modelos, anos e calibres.
+
+O material é identificado pelo modelo para o cálculo das recomendações. A marca/modelo atual entra no resumo e no texto copiado; o motor ainda não usa medições específicas de rigidez de cada produto. No híbrido, mains e crosses têm seleções independentes. Trocar tipo limpa marca/modelo; trocar marca limpa modelo; selecionar novamente a mesma opção preserva o preenchimento. O caminho simplificado por material continua disponível.
