@@ -33,7 +33,7 @@
 .theme-picker{max-width:680px;margin:32px auto 30px;text-align:left}
 .theme-picker-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text)}
 .theme-picker-hint{font-size:10px;font-weight:400;color:var(--muted)}
-.theme-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
+.theme-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
 .theme-option{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:8px 7px 13px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);transition:background-color .15s,border-color .15s,transform .15s}
 .theme-option:hover{transform:translateY(-3px);border-color:var(--accent)}
 .theme-option[aria-pressed=true]{border:2px solid var(--accent);padding:7px 6px 12px;background:var(--soft)}
@@ -52,3 +52,11 @@
 .welcome,.welcome .intro,.theme-picker{min-width:0}.welcome .intro{width:100%}.theme-options{min-width:0;max-width:100%}
 .outfit-mobile-hint{display:none}@media(max-width:700px){.outfit-desktop-hint{display:none}.outfit-mobile-hint{display:inline}}
 .theme-portrait[data-player=federer]{background-image:url('./assets/federer-black.png');background-size:auto 145%;background-position:center 5%}
+
+:root[data-theme=djokovic] {
+  --page-bg:#f0f7ff; --text:#13345c; --muted:#4b637f; --muted-small:#536b86;
+  --surface:#fbfdff; --border:#b7cce3; --primary:#1554ab; --on-primary:#ffffff; --primary-hover:#10468f;
+  --accent:#164f99; --soft:#dcecff; --soft-hover:#e5f0ff; --notice:#e2effd; --panel:#e3eef9;
+  --cross-bg:#ffede6; --cross:#963e25; --cross-border:#b65335; --focus:#a34427; --frame:#54799f;
+}
+.theme-portrait[data-player=djokovic]{background-image:url('./assets/djokovic-blue.png');background-size:auto 135%;background-position:center 3%}
