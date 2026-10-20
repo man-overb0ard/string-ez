@@ -18,3 +18,5 @@ button.choice{text-align:left;color:inherit;font:inherit;width:100%;gap:16px}but
 .value-badge{display:inline-block;margin:0 0 12px;background:var(--soft);border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:6px 10px;font-size:11px;font-weight:700}.cost-comparison{border-top:1px solid var(--border);margin-top:18px;padding-top:15px;font-size:12px}.cost-comparison>b{color:var(--text)}.cards .cost-comparison p{font-size:12px}.cost-comparison details{margin:8px 0}.cost-comparison summary{font-size:11px}
 
 .welcome .primary{min-height:64px;padding:20px 30px;font-size:18px;min-width:min(100%,340px)}
+
+button.choice.specify-string-choice{background:var(--primary);color:var(--on-primary);border:2px solid var(--accent);font-weight:700;margin-top:6px}button.choice.specify-string-choice>span{color:var(--on-primary)}button.choice.specify-string-choice:hover{background:var(--primary-hover);border-color:var(--accent)}
