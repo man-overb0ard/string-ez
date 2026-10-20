@@ -1,3 +1,4 @@
+import { MIN_TENSION, MAX_TENSION } from './tensionRange.ts'
 export const factors = ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade', 'Custo-benefício', 'Manutenção de tensão'] as const
 export type Factor = typeof factors[number]
 export type Answers = {
@@ -42,7 +43,7 @@ export function stringName(spec: StringSpec): string { return `${spec.brand} ${s
 function parseTension(value: string | undefined): number | null {
   if (!value || !/^\d+\s*lb$/.test(value)) return null
   const n = Number.parseInt(value, 10)
-  return n >= 30 && n <= 60 ? n : null
+  return n >= MIN_TENSION && n <= MAX_TENSION ? n : null
 }
 export function recommend(a: Answers): Recommendation[] {
   const currentLayout = a.layout ?? 'Full bed'
@@ -82,8 +83,8 @@ export function recommend(a: Answers): Recommendation[] {
       if (a.pain === 'Sim') delta = Math.min(delta, -2)
       if (a.level === 'Iniciante') delta = Math.min(delta, 0)
       const raw = base + delta
-      const adjusted = Math.max(30, Math.min(60, Math.round(raw)))
-      if (adjusted !== raw) notes.add('O ajuste foi limitado à faixa de 30–60 lb do protótipo; isso não valida a faixa da sua raquete.')
+      const adjusted = Math.max(MIN_TENSION, Math.min(MAX_TENSION, Math.round(raw)))
+      if (adjusted !== raw) notes.add('O ajuste foi limitado à faixa de 30–69 lb do protótipo; isso não valida a faixa da sua raquete.')
       return adjusted
     }
     let mains: number, crosses: number

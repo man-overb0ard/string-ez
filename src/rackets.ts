@@ -5,6 +5,9 @@ const models: Record<string, Record<string, string[]>> = {
   Head: { Speed: ['Pro', 'MP', 'MP L', 'Team'], Radical: ['Pro', 'MP', 'Team'], Gravity: ['Pro', 'Tour', 'MP', 'Team'], Extreme: ['Pro', 'MP', 'MP L', 'Team'], Prestige: ['Pro', 'Tour', 'MP', 'MP L'], Boom: ['Pro', 'MP', 'MP L', 'Team'] },
   Wilson: { Blade: ['98', '100', '100L', '104'], Clash: ['98', '100', '100 Pro', '100L', '108'], 'Pro Staff': ['97', '97L', '97UL', 'X'], Ultra: ['100', '100L', '100UL', '108'], Shift: ['99', '99 Pro', '99L'] },
   Prince: { Tour: ['95', '98', '100', '100P'], Phantom: ['93P', '97P', '100', '100P', '100X'], Beast: ['98', '100', '104'] },
+  Tecnifibre: { 'T-Fight': ['315', '305', '305S', '300', '300S', '295', '285', '280', '270'], 'TF40': ['305', '315'], 'TF-X1': ['300', '285', '275'], 'Tempo': ['298', '285', '270'] },
+  Dunlop: { CX: ['200', '200 Tour', '200 LS', '200 OS', '400', '400 Tour'], SX: ['300', '300 Tour', '300 LS', '300 Lite', '600'], FX: ['500', '500 Tour', '500 LS', '500 Lite', '700'] },
+  Diadem: { Elevate: ['98', '98 Tour', '98 Lite'], Nova: ['100', '100+', '100 Lite'] },
   'Pro Kennex': { Ki: ['5', '10', '15', 'Q+ 5', 'Q+ 15', 'Q+ Tour', 'Q+ Tour Pro'], Black: ['Ace 97', 'Ace 100', 'Ace 105', 'Ace Pro'] },
 }
 export type RacketModel = { name: string; patterns: string[] }
@@ -23,6 +26,9 @@ const overrides: Record<string, Record<string, Record<string, string[]>>> = {
     Phantom: { '93P': ['14 × 18', '18 × 20'], '97P': ['16 × 18'], '100': ['16 × 18'], '100P': ['16 × 18'], '100X': ['16 × 18', '18 × 20'] },
     Beast: { '98': ['16 × 20'] },
   },
+  Tecnifibre: { 'T-Fight': { '305': ['18 × 19'], '305S': ['18 × 19'] }, TF40: { '305': ['16 × 19', '18 × 20'], '315': ['16 × 19', '18 × 20'] } },
+  Dunlop: { CX: { '200 Tour': ['16 × 19', '18 × 20'] }, SX: { '600': ['16 × 18'] }, FX: { '700': ['16 × 18'] } },
+  Diadem: { Elevate: { '98': ['16 × 20'], '98 Tour': ['16 × 20'], '98 Lite': ['16 × 20'] } },
   'Pro Kennex': { Ki: { '5': ['16 × 20'], '15': ['16 × 19'], 'Q+ 5': ['16 × 20'], 'Q+ Tour': ['16 × 19'], 'Q+ Tour Pro': ['16 × 19', '18 × 20'] } },
 }
 export const rackets: Record<string, Record<string, RacketModel[]>> = Object.fromEntries(

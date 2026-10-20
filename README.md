@@ -23,7 +23,7 @@ npm test
 Boas-vindas → marca → linha → modelo → padrão, quando necessário → nível → full bed/híbrido → tipo de corda e tensão atuais → fatores a preservar → objetivo → desconforto → três configurações → copiar resumo.
 
 - A seleção única avança ao toque ou à ativação pelo teclado. Voltar permite revisar e selecionar novamente a mesma resposta.
-- A tensão é uma cartela de **30 a 60 lb**, só com inteiros. Não há kg, slider nem valor pré-selecionado. Tocar no número avança; voltar preserva o número.
+- A tensão é uma cartela de **30 a 69 lb**, só com inteiros. Não há kg, slider nem valor pré-selecionado. Tocar no número avança; voltar preserva o número.
 - Full bed coleta um tipo de corda e uma tensão. Híbrido coleta tipos e tensões independentes para mains (verticais) e crosses (horizontais). Os cabeçalhos distinguem as direções por texto, setas e cores. Trocar a configuração limpa as respostas dependentes.
 - Antes do objetivo, é possível marcar vários fatores a preservar. Continuar confirma a seleção. “Nada em especial” é exclusivo e permite seguir sem fatores a preservar.
 - As respostas permanecem em memória até recarregar; não são enviadas a serviços externos.
@@ -36,13 +36,13 @@ Cada opção informa marca/modelo, material, calibre, full bed ou híbrido, cord
 
 As configurações recebem classificações qualitativas internas por fator. O objetivo tem peso 5; cada fator a preservar, peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes e pessoas com desconforto recebem apenas configurações sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
 
-A tensão parte do histórico informado por direção. As regras consideram objetivo, material anterior e proposto, conflito entre conforto/controle e padrão 18 × 20. Ao propor full bed após híbrido, a referência é a média arredondada das tensões atuais; híbridos preservam referências separadas. As sugestões ficam entre 30 e 60 lb e explicam quando esse limite afeta o ajuste. Histórico inválido não gera tensões inventadas.
+A tensão parte do histórico informado por direção. As regras consideram objetivo, material anterior e proposto, conflito entre conforto/controle e padrão 18 × 20. Ao propor full bed após híbrido, a referência é a média arredondada das tensões atuais; híbridos preservam referências separadas. As sugestões ficam entre 30 e 69 lb e explicam quando esse limite afeta o ajuste. Histórico inválido não gera tensões inventadas.
 
 **Limites:** a faixa de tensão do fabricante de cada raquete ainda não está validada. Os números são pontos de teste que precisam de confirmação do encordoador e do fabricante. O catálogo de cordas é inicial, sem preços, estoque ou consulta em tempo real. As regras e classificações precisam de revisão de um especialista antes de lançamento público. Nenhuma recomendação trata lesões. Não existe garantia de preservar simultaneamente fatores em conflito.
 
 ## Catálogo de raquetes
 
-`src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince e Pro Kennex. Não há opções “não sei”: a identificação exige marca, linha e modelo do catálogo. Modelos de padrão único pulam a pergunta; variantes oferecem os padrões cadastrados. Trocar marca, linha ou modelo limpa o padrão anterior. Algumas variantes abrangem gerações diferentes: ainda é necessário revisar e segmentar por ano. Marca/modelo identificam a raquete, mas não fornecem uma validação de tensão neste protótipo.
+`src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince, Pro Kennex, Tecnifibre, Dunlop e Diadem. Não há opções “não sei”: a identificação exige marca, linha e modelo do catálogo. Modelos de padrão único pulam a pergunta; variantes oferecem os padrões cadastrados. Trocar marca, linha ou modelo limpa o padrão anterior. Algumas variantes abrangem gerações diferentes: ainda é necessário revisar e segmentar por ano. Marca/modelo identificam a raquete, mas não fornecem uma validação de tensão neste protótipo.
 
 ## Validação
 
@@ -55,3 +55,8 @@ O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção
 Em cada seleção de tipo de corda, “Quero especificar” abre marca → modelo. O catálogo em `src/stringCatalog.ts` inclui Solinco, Yonex, Babolat, Tecnifibre, HEAD, Signum Pro, Robin Söderling (RS), Luxilon, Wilson, Prince, Kirschbaum, MSV, Dunlop e Tourna. É um catálogo inicial de identificação, não um ranking de vendas, nem garantia de disponibilidade no Brasil. Ele não cobre todos os modelos, anos e calibres.
 
 O material é identificado pelo modelo para o cálculo das recomendações. A marca/modelo atual entra no resumo e no texto copiado; o motor ainda não usa medições específicas de rigidez de cada produto. No híbrido, mains e crosses têm seleções independentes. Trocar tipo limpa marca/modelo; trocar marca limpa modelo; selecionar novamente a mesma opção preserva o preenchimento. O caminho simplificado por material continua disponível.
+
+
+A cartela de tensão tem quatro linhas fixas de dez números: 30–39, 40–49, 50–59 e 60–69 lb. Em telas estreitas, apenas a cartela desliza horizontalmente para manter alvos de toque de pelo menos 44 px; a página não transborda. Ao voltar, a cartela posiciona o valor selecionado na área visível.
+
+As linhas adicionadas ao catálogo de raquetes são Tecnifibre T-Fight, TF40, TF-X1 e Tempo; Dunlop CX, SX e FX; Diadem Elevate e Nova. As variantes de padrão seguem o fluxo condicional, incluindo TF40 305/315 e CX 200 Tour. O catálogo continua inicial e não diferencia todas as gerações.

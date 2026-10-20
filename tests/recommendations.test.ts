@@ -21,7 +21,7 @@ describe('configurações recomendadas', () => {
                   if (pain === 'Sim' || level === 'Iniciante') assert.notEqual(spec.material, 'Poliéster')
                 }
                 for (const value of [r.tensions.mains, r.tensions.crosses]) {
-                  assert.ok(Number.isInteger(value) && value >= 30 && value <= 60)
+                  assert.ok(Number.isInteger(value) && value >= 30 && value <= 69)
                 }
                 assert.ok(r.reason && r.tradeoff && r.preservation && r.tensions.explanation)
               }
@@ -75,14 +75,14 @@ describe('configurações recomendadas', () => {
     }
   })
   it('limita sugestões às bordas do protótipo e explica quando o ajuste foi limitado', () => {
-    for (const tension of ['30 lb', '60 lb']) {
+    for (const tension of ['30 lb', '69 lb']) {
       const r = recommend({ ...base, tension, goal: tension === '30 lb' ? 'Conforto' : 'Controle', previous: 'Multifilamento' })
-      assert.ok(r.every(s => s.tensions.mains >= 30 && s.tensions.crosses <= 60))
+      assert.ok(r.every(s => s.tensions.mains >= 30 && s.tensions.crosses <= 69))
       assert.ok(r.some(s => s.tensions.explanation.includes('limitado')))
     }
   })
   it('não inventa tensões para históricos ausentes, fora dos limites ou na unidade antiga', () => {
-    for (const tension of ['', '23 kg', '29 lb', '61 lb', '50.5 lb', '50garbage lb']) assert.deepEqual(recommend({ ...base, tension }), [])
+    for (const tension of ['', '23 kg', '29 lb', '70 lb', '50.5 lb', '50garbage lb']) assert.deepEqual(recommend({ ...base, tension }), [])
     assert.deepEqual(recommend({ ...base, layout: 'Híbrido', mainsTension: '50 lb' }), [])
   })
 })
@@ -119,5 +119,27 @@ describe('identificação da corda atual', () => {
     const generic = { ...detailed, mains: 'Poliéster', crosses: 'Multifilamento' }
     assert.deepEqual(recommend(detailed), recommend(generic))
     assert.equal(findString('Signum Pro', 'Tornado')?.material, 'Poliéster')
+  })
+})
+
+
+describe('novas raquetes e faixa de tensão ampliada', () => {
+  it('cadastra padrões únicos e variantes das três novas marcas', () => {
+    assert.deepEqual(getPatterns('Tecnifibre', 'T-Fight', '305S'), ['18 × 19'])
+    assert.deepEqual(getPatterns('Tecnifibre', 'TF40', '305'), ['16 × 19', '18 × 20'])
+    assert.deepEqual(getPatterns('Dunlop', 'CX', '200 Tour'), ['16 × 19', '18 × 20'])
+    assert.deepEqual(getPatterns('Dunlop', 'FX', '500'), ['16 × 19'])
+    assert.deepEqual(getPatterns('Diadem', 'Elevate', '98'), ['16 × 20'])
+    assert.deepEqual(getPatterns('Diadem', 'Nova', '100'), ['16 × 19'])
+  })
+  it('aceita cada tensão da nova linha de 60–69 e continua produzindo três opções', () => {
+    for (let tension = 60; tension <= 69; tension++) {
+      const result = recommend({ ...base, tension: `${tension} lb` })
+      assert.equal(result.length, 3)
+      assert.ok(result.every(r => r.tensions.mains <= 69 && r.tensions.crosses <= 69))
+    }
+    const hybrid = recommend({ ...base, layout: 'Híbrido', mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '69 lb', crossesTension: '65 lb' })
+    assert.equal(hybrid.length, 3)
+    assert.ok(hybrid.every(r => r.tensionComparison.includes('69')))
   })
 })
