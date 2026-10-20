@@ -42,3 +42,34 @@ export function getPatterns(brand: string, line: string, model: string): string[
 export function racketLabel(brand: string, line: string, model: string) {
   return [brand, line, model].filter(Boolean).filter((part, i, all) => i === 0 || part !== all[i - 1]).join(' · ')
 }
+
+
+// Tamanho apenas quando o modelo do catálogo permite identificá-lo sem escolher geração.
+// Não equivale ao espaçamento real das cordas ou a uma medição de launch angle.
+export function getHeadSize(brand: string, line: string, model: string): number | undefined {
+  if (!rackets[brand]?.[line]?.some(entry => entry.name === model)) return undefined
+  if (['Yonex', 'Wilson', 'Prince', 'Diadem'].includes(brand)) {
+    const size = Number.parseInt(model, 10)
+    if (size >= 90 && size <= 115) return size
+  }
+  if (brand === 'Wilson') {
+    if (line === 'Pro Staff') return model === 'X' ? 100 : 97
+  }
+  if (brand === 'Babolat') {
+    if (model === '98' || model === '97' || model === '107') return Number(model)
+    return 100
+  }
+  if (brand === 'Head') {
+    if (line === 'Speed' && model !== 'Team') return 100
+    if (line === 'Radical') return model === 'Team' ? 102 : 98
+    if (line === 'Gravity' && model !== 'Tour') return model === 'Team' ? 104 : 100
+    if (line === 'Boom') return model === 'Pro' ? 98 : model === 'Team' ? 102 : 100
+  }
+  if (brand === 'Tecnifibre' && line === 'TF40') return 98
+  if (brand === 'Dunlop') {
+    if (line === 'CX') return model === '200 Tour' ? 95 : model === '200 OS' ? 105 : model.startsWith('200') ? 98 : 100
+    if (line === 'SX') return model === '300 Tour' ? 98 : model === '600' ? 105 : 100
+    if (line === 'FX') return model === '500 Tour' ? 98 : model === '700' ? 107 : 100
+  }
+  return undefined
+}

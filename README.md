@@ -34,7 +34,7 @@ Boas-vindas → marca → linha → modelo → padrão, quando necessário → n
 
 Cada opção informa marca/modelo, material, calibre, full bed ou híbrido, cordas por direção, tensão sugerida em lb, comparação com a atual, motivos, pontos a preservar e concessões. O resumo copiado contém os mesmos detalhes.
 
-As configurações recebem classificações qualitativas internas por fator. O objetivo tem peso 5; cada fator a preservar, peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes e pessoas com desconforto recebem apenas configurações sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
+As configurações recebem classificações qualitativas internas por fator. O usuário escolhe um ou dois objetivos, combinados com o mesmo peso. A média das classificações dos objetivos tem peso 5; cada fator a preservar tem peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes e pessoas com desconforto recebem apenas configurações sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
 
 A tensão parte do histórico informado por direção. As regras consideram objetivo, material anterior e proposto, conflito entre conforto/controle e padrão 18 × 20. Ao propor full bed após híbrido, a referência é a média arredondada das tensões atuais; híbridos preservam referências separadas. As sugestões ficam entre 30 e 69 lb e explicam quando esse limite afeta o ajuste. Histórico inválido não gera tensões inventadas.
 
@@ -46,7 +46,7 @@ A tensão parte do histórico informado por direção. As regras consideram obje
 
 ## Validação
 
-Os testes em `tests/recommendations.test.ts` cobrem configurações únicas, produtos/tensões, filtros por dor/experiência, influência dos fatores preservados, transição para híbrido, cálculo por direção, limites, histórico inválido e padrões de raquetes. O teste combinado percorre 480 perfis.
+Os testes em `tests/recommendations.test.ts` cobrem configurações únicas, produtos/tensões, filtros por dor/experiência, influência dos fatores preservados, transição para híbrido, cálculo por direção, limites, histórico inválido e padrões de raquetes. O teste combinado percorre 600 perfis.
 
 O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção múltipla, cartela, voltar, resumo e clipboard. O projeto pode futuramente ser empacotado com Capacitor para Android/iOS; isso ainda não está implementado.
 
@@ -60,3 +60,14 @@ O material é identificado pelo modelo para o cálculo das recomendações. A ma
 A cartela de tensão tem quatro linhas fixas de dez números: 30–39, 40–49, 50–59 e 60–69 lb. Em telas estreitas, apenas a cartela desliza horizontalmente para manter alvos de toque de pelo menos 44 px; a página não transborda. Ao voltar, a cartela posiciona o valor selecionado na área visível.
 
 As linhas adicionadas ao catálogo de raquetes são Tecnifibre T-Fight, TF40, TF-X1 e Tempo; Dunlop CX, SX e FX; Diadem Elevate e Nova. As variantes de padrão seguem o fluxo condicional, incluindo TF40 305/315 e CX 200 Tour. O catálogo continua inicial e não diferencia todas as gerações.
+
+
+## Dois objetivos e ângulo de saída
+
+A etapa de melhoria é uma seleção de um ou dois objetivos, com confirmação. `src/preferences.ts` centraliza as opções e as restrições. Tanto nos fatores a preservar quanto nos objetivos, “Ângulo de saída baixo” e “Ângulo de saída alto” se substituem: não é possível escolher ambos no mesmo grupo. Prioridades opostas entre preservar e melhorar são permitidas e explicitadas como conflito nos resultados.
+
+Ângulo de saída é a inclinação inicial da trajetória ao deixar as cordas; não equivale a spin. As classificações e ajustes são heurísticas, não medições dos produtos. A regra testa +2 lb para buscar saída mais baixa e −2 lb para mais alta, antes de ajustes de material, preferências, perfil e limites. Com dois objetivos, usa a média dos ajustes. Se o usuário quer preservar um ângulo, a parcela de ajuste dos objetivos é limitada a ±1 lb, exceto quando ele explicitamente busca o mesmo ângulo. Mudanças de material continuam podendo alterar a resposta.
+
+`getHeadSize` em `src/rackets.ts` retorna a área da cabeça somente para identificações disponíveis no catálogo sem distinguir uma geração. A recomendação recebe nome completo, padrão e área quando disponível. Contagem de cordas normalizada por área fornece apenas uma referência aproximada de densidade: ≥342 cordas por 100 pol² é tratada como mais densa; ≤310, como mais aberta. A regra adiciona 1 lb ao ajuste de saída baixa em configuração mais aberta e reduz mais 1 lb para saída alta em configuração mais densa. Sem área conhecida, usa a contagem por referência de 100 pol² e informa a limitação. Isso não mede espaçamento real, ângulo, rigidez do aro ou potência específica de uma marca. A faixa de tensão de fábrica continua sem validação automática.
+
+Cada cartão explica os objetivos combinados, as características de raquete usadas e os compromissos de tensão. Técnica, ponto de impacto, material e atrito também afetam o ângulo; testar em quadra é necessário. Os filtros para desconforto/iniciantes prevalecem sobre um pedido de maior tensão ou uma configuração com poliéster.

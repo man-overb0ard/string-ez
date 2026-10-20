@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { factors, recommend, recommendationText, type Answers as RecommendationAnswers } from './recommendations'
-import { rackets, getPatterns, racketLabel } from './rackets'
+import { rackets, getPatterns, racketLabel, getHeadSize } from './rackets'
 import StringBedDiagram from './StringBedDiagram'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
 import { stringCatalog, specifyString, findString, resolveStringMaterial } from './stringCatalog'
+import { improvementFactors, launchLow, launchHigh, nothingLiked, togglePreference, canSelectPreference } from './preferences'
 import './App.css'
 
 type Answers = RecommendationAnswers & {
@@ -15,12 +16,11 @@ type Answers = RecommendationAnswers & {
 type Question = { key: keyof Answers; title: string; hint: string; options?: string[] }
 const currentYear = new Date().getFullYear()
 type StringSlot = 'previous' | 'mains' | 'crosses'
-const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goal: '', pain: '', liked: [] }
+const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', liked: [] }
 const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'Tripa natural', specifyString]
-const nothingLiked = 'Nada em especial'
 const likesQuestion: Question = {
   key: 'liked', title: 'O que você gosta no encordoamento atual?',
-  hint: 'Marque tudo o que gostaria de preservar. Na próxima etapa, você escolhe o principal ponto a melhorar.',
+  hint: 'Marque tudo o que gostaria de preservar. Na próxima etapa, você escolhe até dois pontos a melhorar.',
   options: [...factors, nothingLiked],
 }
 
@@ -61,19 +61,21 @@ function App() {
       { key: 'tension' as const, title: 'E a tensão atual?', hint: 'Selecione a tensão do seu encordoamento atual, em libras (lb).' },
     ]),
     likesQuestion,
-    { key: 'goal', title: 'O que você quer melhorar?', hint: 'Escolha o que faria mais diferença na sua próxima partida. Vamos cruzar esse objetivo com o que você quer preservar.', options: ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade'] },
+    { key: 'goals', title: 'O que você quer melhorar?', hint: 'Escolha um ou dois pontos para sua próxima partida. Os dois terão o mesmo peso nas sugestões.', options: [...improvementFactors] },
     { key: 'pain', title: 'Sente desconforto no braço?', hint: 'Isso muda nossa prioridade na escolha das cordas.', options: ['Sim', 'Não'] },
   ]
   const result = step === questions.length
   const q = questions[step]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
-  const isMulti = q?.key === 'liked'
+  const isGoals = q?.key === 'goals'
+  const isMulti = q?.key === 'liked' || isGoals
+  const multiSelection = isGoals ? answers.goals : answers.liked
   const direction = q?.key.startsWith('mains') ? 'mains' : q?.key.startsWith('crosses') ? 'crosses' : null
   const materialFor = (slot: StringSlot) => resolveStringMaterial(answers[slot], answers[`${slot}Brand`], answers[`${slot}Model`])
-  const recommendations = result ? recommend({ ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), pattern: resolvedPattern }) : []
   const racketSummary = racketLabel(answers.brand, answers.line, answers.racket)
+  const recommendations = result ? recommend({ ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), racket: racketSummary, headSize: getHeadSize(answers.brand, answers.line, answers.racket), pattern: resolvedPattern }) : []
   const answerText = (key: keyof Answers) => {
-    if (key === 'liked') return answers.liked.join(', ')
+    if (key === 'liked' || key === 'goals') return answers[key].join(', ')
     if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialFor(key)
     return answers[key]
   }
@@ -102,10 +104,9 @@ function App() {
     })
   }
   function choose(value: string) { updateAnswer(q.key, value); move(step + 1) }
-  function toggleLike(value: string) {
-    setAnswers(current => ({ ...current, liked: current.liked.includes(value)
-      ? current.liked.filter(item => item !== value)
-      : value === nothingLiked ? [nothingLiked] : [...current.liked.filter(item => item !== nothingLiked), value] }))
+  function toggleMulti(value: string) {
+    const key = isGoals ? 'goals' : 'liked'
+    setAnswers(current => ({ ...current, [key]: togglePreference(current[key], value, isGoals ? 2 : Infinity) }))
   }
   async function copy() {
     const text = `Meu perfil String EZ\nRaquete: ${racketSummary} · ${resolvedPattern}\n${questions.map(item => `${item.title} ${answerText(item.key)}`).join('\n')}\n\n${recommendations.map((r, i) => `${i + 1}. ${recommendationText(r)}`).join('\n\n')}\n\nSugestões por regras, não validação da faixa de tensão do fabricante.`
@@ -121,7 +122,8 @@ function App() {
       </section> : result ? <section className="results">
         <p className="eyebrow">SEU PRÓXIMO ENCORDOAMENTO</p><h1 ref={heading} tabIndex={-1}>Três caminhos.<br /><em>Um jogo mais seu.</em></h1>
         <p className="lead">Configurações para discutir com seu encordoador e testar em quadra, escolhidas por regras a partir do seu perfil.</p>
-        <div className="profile-priorities"><p><b>Preservar</b> {answers.liked.join(' · ')}</p><p><b>Melhorar</b> {answers.goal}</p></div>
+        <p className="racket-reference">Referência: <b>{racketSummary}</b> · {resolvedPattern}{getHeadSize(answers.brand, answers.line, answers.racket) ? ` · ${getHeadSize(answers.brand, answers.line, answers.racket)} pol²` : ''}</p>
+        <div className="profile-priorities"><p><b>Preservar</b> {answers.liked.join(' · ')}</p><p><b>Melhorar</b> {answers.goals.join(' · ')}</p></div>
         <details><summary>Conferir minhas respostas</summary><dl><div><dt>Padrão de cordas</dt><dd>{resolvedPattern}</dd></div>{questions.filter(item => item.key !== 'pattern').map(item => <div key={item.key}><dt>{item.title}</dt><dd>{answerText(item.key)}</dd></div>)}</dl></details>
         {answers.pain === 'Sim' && <p className="notice">Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões; por isso, as opções abaixo não contêm poliéster.</p>}
         <p className="notice"><b>Antes de encordoar:</b> as tensões abaixo são pontos de teste, não uma faixa validada para sua raquete. Confirme cada valor com o encordoador e com a indicação do fabricante. Os modelos de corda fazem parte de um catálogo inicial; preço e disponibilidade não são consultados em tempo real.</p>
@@ -135,17 +137,19 @@ function App() {
         <h1 ref={heading} tabIndex={-1}>{direction && <span className={`direction-heading ${direction}`}><span aria-hidden="true">{direction === 'mains' ? '↕' : '↔'}</span> {direction === 'mains' ? 'MAINS · VERTICAIS' : 'CROSSES · HORIZONTAIS'}</span>}{q.title}</h1>
         {q.key.endsWith('Model') && <p className="racket-path">{answers[q.key.replace('Model', 'Brand') as keyof Answers]}</p>}
         {(q.key === 'line' || q.key === 'racket') && <p className="racket-path">{racketLabel(answers.brand, answers.line, '')}</p>}
-        <p className="lead" id="question-hint">{q.hint}{q.options && <span className="micro option-hint">{isMulti ? 'Selecione um ou mais fatores e confirme em Continuar.' : 'Toque em uma opção para avançar.'}</span>}</p>
-        <form onSubmit={event => { event.preventDefault(); if (isMulti && answers.liked.length) move(step + 1) }}>
+        <p className="lead" id="question-hint">{q.hint}{q.options && <span className="micro option-hint">{isMulti ? isGoals ? 'Selecione até duas opções e confirme em Continuar.' : 'Selecione um ou mais fatores e confirme em Continuar.' : 'Toque em uma opção para avançar.'}</span>}</p>
+        {isMulti && <p className="launch-angle-help">Ângulo de saída (launch angle) é a inclinação inicial da bola ao sair das cordas. Alto e baixo são alternativas: escolher um substitui o outro. A trajetória também depende da técnica, do material e da raquete.</p>}
+        {isGoals && <p className="selection-count" role="status">{answers.goals.length} de 2 objetivos selecionados</p>}
+        <form onSubmit={event => { event.preventDefault(); if (isMulti && multiSelection.length && (!isGoals || multiSelection.length <= 2)) move(step + 1) }}>
           <fieldset aria-describedby="question-hint"><legend className="sr-only">{q.title}</legend>
             {isTension ? <TensionSelector label={q.title} selected={String(answers[q.key])} onSelect={choose} />
-              : isMulti ? <div className="choices liked-choices">{q.options?.map(option => <label className={answers.liked.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" checked={answers.liked.includes(option)} onChange={() => toggleLike(option)} /><span>{option}</span></label>)}</div>
+              : isMulti ? <div className="choices liked-choices">{q.options?.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={isGoals && !canSelectPreference(multiSelection, option, 2)} onChange={() => toggleMulti(option)} /><span>{option}{(option === launchLow || option === launchHigh) && <small className="angle-option-hint">{option === launchLow ? 'Trajetória inicial mais baixa ao deixar as cordas.' : 'Trajetória inicial mais alta ao deixar as cordas.'}</small>}</span></label>)}</div>
                 : <div className={q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{q.options?.map(option => <button type="button" className={answers[q.key] === option ? 'choice selected' : 'choice'} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
                   {q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><small>{option === 'Full bed' ? 'Uma única corda em toda a raquete.' : 'Duas cordas, combinadas no mesmo encordoamento.'}</small></span></> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material}</small></span> : option}<span aria-hidden="true">→</span>
                 </button>)}</div>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>
-          <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!answers.liked.length} type="submit">Continuar →</button>}</div>
+          <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!multiSelection.length} type="submit">Continuar →</button>}</div>
         </form>
         <p className="micro">Suas respostas ficam apenas nesta sessão. Nenhum dado é enviado.</p>
       </section>}

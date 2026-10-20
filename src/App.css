@@ -11,3 +11,5 @@ button.choice{text-align:left;color:inherit;font:inherit;width:100%;gap:16px}but
 .string-model-option{display:flex;flex-direction:column;gap:6px;text-align:left}.string-model-option small{font-size:12px;font-weight:400;color:#627061}.string-brand-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.string-brand-choices button.choice{font-size:14px;gap:8px;padding:16px 14px;overflow-wrap:anywhere}@media(max-width:350px){.string-brand-choices{grid-template-columns:1fr}}
 
 @media(min-width:481px) and (max-width:640px){.tension-scroll-hint{display:block;margin:0 0 12px}}
+.angle-option-hint{display:block;margin-top:6px;font-size:12px;font-weight:400;line-height:1.5;color:#627061}.launch-angle-help{font-size:12px;color:#627061;line-height:1.65;background:#edf0e3;border-radius:8px;padding:14px 16px;margin:0 0 20px}.selection-count{font-size:12px;font-weight:700;color:#42673c}.liked-choices .choice:has(input:disabled){opacity:.45;cursor:not-allowed}.liked-choices .choice>span{min-width:0}
+.racket-reference{font-size:12px;color:#627061;margin:0 0 20px}
