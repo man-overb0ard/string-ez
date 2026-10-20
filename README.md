@@ -34,7 +34,7 @@ Boas-vindas → marca → linha → modelo → padrão, quando necessário → n
 
 Cada opção informa marca/modelo, material, calibre, full bed ou híbrido, cordas por direção, tensão sugerida em lb, comparação com a atual, motivos, pontos a preservar e concessões. O resumo copiado contém os mesmos detalhes.
 
-As configurações recebem classificações qualitativas internas por fator. O usuário escolhe um ou dois objetivos, combinados com o mesmo peso. A média das classificações dos objetivos tem peso 5; cada fator a preservar tem peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes e pessoas com desconforto recebem apenas configurações sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
+As configurações recebem classificações qualitativas internas por fator. O usuário escolhe um ou dois objetivos, combinados com o mesmo peso. A média das classificações dos objetivos tem peso 5; cada fator a preservar tem peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes recebem apenas configurações sem poliéster. Desconforto físico aumenta o peso do conforto, mas permite até uma alternativa com poliéster em tensão reduzida, acompanhada de pelo menos duas opções sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
 
 A tensão parte do histórico informado por direção. As regras consideram objetivo, material anterior e proposto, conflito entre conforto/controle e padrão 18 × 20. Ao propor full bed após híbrido, a referência é a média arredondada das tensões atuais; híbridos preservam referências separadas. As sugestões ficam entre 30 e 69 lb e explicam quando esse limite afeta o ajuste. Histórico inválido não gera tensões inventadas.
 
@@ -70,8 +70,17 @@ A etapa de melhoria é uma seleção de um ou dois objetivos, com confirmação.
 
 `getHeadSize` em `src/rackets.ts` retorna a área da cabeça somente para identificações disponíveis no catálogo sem distinguir uma geração. A recomendação recebe nome completo, padrão e área quando disponível. Contagem de cordas normalizada por área fornece apenas uma referência aproximada de densidade: ≥342 cordas por 100 pol² é tratada como mais densa; ≤310, como mais aberta. A regra adiciona 1 lb ao ajuste de saída baixa em configuração mais aberta e reduz mais 1 lb para saída alta em configuração mais densa. Sem área conhecida, usa a contagem por referência de 100 pol² e informa a limitação. Isso não mede espaçamento real, ângulo, rigidez do aro ou potência específica de uma marca. A faixa de tensão de fábrica continua sem validação automática.
 
-Cada cartão explica os objetivos combinados, as características de raquete usadas e os compromissos de tensão. Técnica, ponto de impacto, material e atrito também afetam o ângulo; testar em quadra é necessário. Os filtros para desconforto/iniciantes prevalecem sobre um pedido de maior tensão ou uma configuração com poliéster.
+Cada cartão explica os objetivos combinados, as características de raquete usadas e os compromissos de tensão. Técnica, ponto de impacto, material e atrito também afetam o ângulo; testar em quadra é necessário. O desconforto limita as tensões sugeridas e o perfil iniciante mantém a exclusão de poliéster. Essas restrições prevalecem sobre pedidos de maior firmeza ou ângulo mais baixo.
 
 ## Desconforto físico
 
 A pergunta considera desconforto durante ou após jogar, com respostas Sim/Não. Sim abre uma seleção múltipla obrigatória com cotovelo de tenista, cotovelo de golfista, dor no ombro e dor nos punhos. Voltar preserva as escolhas; mudar para Não limpa os detalhes e pula essa tela. Os relatos aparecem no resumo e na cópia. São autorrelatos, sem confirmação de diagnóstico. Os filtros gerais de conforto continuam aplicados quando há desconforto, sem ajustes clínicos ou tratamentos específicos por condição.
+
+
+## Poliéster em tensão reduzida com desconforto
+
+O relato de desconforto não exclui automaticamente poliéster para jogadores intermediários/avançados. A classificação ganha peso adicional para conforto (+2 × classificação de conforto) e penaliza configurações com poliéster (−4). Até uma configuração com poliéster pode entrar entre as três opções, sem forçá-la quando as prioridades favorecem alternativas mais macias. O perfil iniciante continua excluindo poliéster.
+
+Cada direção com poliéster e desconforto recebe uma referência de teste de no máximo 45 lb e pelo menos 4 lb abaixo da referência atual, respeitando o limite inferior de 30 lb do protótipo. Os demais ajustes continuam considerando objetivos, material e raquete. O valor de 45 lb é uma decisão heurística de produto para revisão, não uma faixa clinicamente segura nem homologada pelo fabricante. Se a tensão já está no mínimo, a regra explica o limite, sem inventar uma redução abaixo do seletor. Em híbridos, a redução aplica-se à direção com poliéster, preservando as referências independentes.
+
+Baixa tensão não elimina a rigidez do poliéster nem garante ausência de dor. A orientação é avaliar a configuração com o encordoador, respeitar a faixa do fabricante e interromper o teste se houver dor. Nenhum dos relatos físicos específicos gera uma prescrição clínica.

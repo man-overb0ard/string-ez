@@ -19,7 +19,7 @@ describe('configurações recomendadas', () => {
               for (const r of result) {
                 for (const spec of [r.mains, r.crosses]) {
                   assert.ok(spec.brand && spec.model && spec.gauge && spec.material)
-                  if (pain === 'Sim' || level === 'Iniciante') assert.notEqual(spec.material, 'Poliéster')
+                  if (level === 'Iniciante') assert.notEqual(spec.material, 'Poliéster')
                 }
                 for (const value of [r.tensions.mains, r.tensions.crosses]) {
                   assert.ok(Number.isInteger(value) && value >= 30 && value <= 69)
@@ -68,11 +68,11 @@ describe('configurações recomendadas', () => {
     assert.ok(samePoly)
     assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === 'ptp')!.tensions.mains)
   })
-  it('não aumenta a tensão de um full bed que relata dor e exclui poliéster', () => {
+  it('não aumenta a tensão de um full bed que relata dor e reduz mais a tensão do poliéster', () => {
     for (const r of recommend({ ...base, pain: 'Sim' })) {
       assert.ok(r.tensions.mains < 50)
-      assert.notEqual(r.mains.material, 'Poliéster')
-      assert.notEqual(r.crosses.material, 'Poliéster')
+      if (r.mains.material === 'Poliéster') assert.ok(r.tensions.mains <= 45)
+      if (r.crosses.material === 'Poliéster') assert.ok(r.tensions.crosses <= 45)
     }
   })
   it('limita sugestões às bordas do protótipo e explica quando o ajuste foi limitado', () => {
@@ -170,8 +170,8 @@ describe('dois objetivos e ângulo de saída', () => {
         for (const r of results) {
           assert.ok(Number.isInteger(r.tensions.mains) && r.tensions.mains >= 30 && r.tensions.mains <= 69)
           if (pain === 'Sim') {
-            assert.notEqual(r.mains.material, 'Poliéster')
-            assert.notEqual(r.crosses.material, 'Poliéster')
+            if (r.mains.material === 'Poliéster') assert.ok(r.tensions.mains <= 45)
+            if (r.crosses.material === 'Poliéster') assert.ok(r.tensions.crosses <= 45)
             assert.ok(r.tensions.mains <= 48)
           }
         }
@@ -237,5 +237,46 @@ describe('famílias Pro Kennex', () => {
     assert.deepEqual(getPatterns('Pro Kennex', 'Ki', '5'), ['16 × 20'])
     assert.deepEqual(getPatterns('Pro Kennex', 'Q+', '5'), ['16 × 20'])
     assert.deepEqual(getPatterns('Pro Kennex', 'Q+', 'Tour Pro'), ['16 × 19', '18 × 20'])
+  })
+})
+
+describe('poliéster com desconforto físico', () => {
+  it('permite uma alternativa com poliéster em tensão reduzida e duas opções sem poliéster', () => {
+    for (const goals of [['Controle'], ['Efeito (spin)'], ['Controle', 'Efeito (spin)']]) {
+      const results = recommend({ ...base, pain: 'Sim', tension: '54 lb', goals })
+      const polys = results.filter(r => r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster')
+      assert.equal(polys.length, 1)
+      assert.equal(results.length - polys.length, 2)
+      const poly = polys[0]
+      for (const [spec, tension] of [[poly.mains, poly.tensions.mains], [poly.crosses, poly.tensions.crosses]] as const) {
+        if (spec.material === 'Poliéster') assert.ok(tension <= 45 && tension <= 54 - 4)
+      }
+      assert.match(poly.reason, /tensão reduzida/)
+      assert.match(poly.tensions.explanation, /nem garante ausência de dor/)
+      assert.match(recommendationText(poly), /não uma faixa clinicamente segura/)
+      assert.match(poly.caution, /não torna o poliéster.*isenta de risco/)
+    }
+  })
+  it('reduz a tensão do poliéster na direção correta de um híbrido', () => {
+    const results = recommend({ ...base, pain: 'Sim', layout: 'Híbrido', mains: 'Tripa natural', crosses: 'Poliéster', mainsTension: '50 lb', crossesTension: '40 lb', liked: ['Potência'] })
+    const hybrid = results.find(r => r.id === 'gut-poly')!
+    assert.ok(hybrid)
+    assert.equal(hybrid.tensions.mains, 48)
+    assert.equal(hybrid.tensions.crosses, 36)
+    assert.match(hybrid.tensionComparison, /Crosses: 40 → 36 lb/)
+  })
+  it('mantém a exclusão para iniciantes e não força poliéster quando a prioridade é conforto', () => {
+    for (const a of [{ ...base, pain: 'Sim', goals: ['Conforto'] }, { ...base, pain: 'Sim', level: 'Iniciante', goals: ['Efeito (spin)'] }]) {
+      const results = recommend(a)
+      assert.equal(results.length, 3)
+      assert.ok(results.every(r => r.mains.material !== 'Poliéster' && r.crosses.material !== 'Poliéster'))
+    }
+  })
+  it('respeita o limite inferior quando a tensão atual já é baixa', () => {
+    const results = recommend({ ...base, pain: 'Sim', tension: '30 lb', goals: ['Efeito (spin)'] })
+    const poly = results.find(r => r.mains.material === 'Poliéster')!
+    assert.ok(poly)
+    assert.equal(poly.tensions.mains, 30)
+    assert.match(poly.tensions.explanation, /limitado/)
   })
 })

@@ -23,6 +23,7 @@ const strings = {
   gut: { brand: 'Babolat', model: 'Touch VS', material: 'Tripa natural', gauge: '1,30 mm' },
   ptp: { brand: 'Yonex', model: 'POLYTOUR PRO', material: 'Poliéster', gauge: '1,25 mm' },
   hyperg: { brand: 'Solinco', model: 'Hyper-G', material: 'Poliéster', gauge: '1,30 mm' },
+  hypergSoft: { brand: 'Solinco', model: 'Hyper-G Soft', material: 'Poliéster', gauge: '1,25 mm' },
 } satisfies Record<string, StringSpec>
 function scores(comfort: number, control: number, power: number, spin: number, durability: number, cost: number, retention: number, low: number, high: number): Scores {
   return { Conforto: comfort, Controle: control, Potência: power, 'Efeito (spin)': spin, Durabilidade: durability, 'Custo-benefício': cost, 'Manutenção de tensão': retention, [launchLow]: low, [launchHigh]: high }
@@ -35,6 +36,7 @@ const setups: Setup[] = [
   { id: 'gut', title: 'Conforto e resposta premium', layout: 'Full bed', mains: strings.gut, crosses: strings.gut, scores: scores(5,3,5,3,2,1,5,2,4), benefit: 'A tripa natural combina elasticidade e manutenção de tensão para quem prioriza conforto e resposta.', tradeoff: 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.', },
   { id: 'ptp', title: 'Controle no swing completo', layout: 'Full bed', mains: strings.ptp, crosses: strings.ptp, scores: scores(2,5,2,4,4,3,2,4,3), benefit: 'O copoliéster pode ajudar jogadores que aceleram o swing a controlar a resposta do encordoamento.', tradeoff: 'Mais firme que multifilamento; precisa ser trocado quando perder resposta, mesmo sem romper.', },
   { id: 'hyperg', title: 'Controle com foco no efeito', layout: 'Full bed', mains: strings.hyperg, crosses: strings.hyperg, scores: scores(2,5,2,5,4,3,2,3,4), benefit: 'Poliéster perfilado para explorar controle e efeito junto com a técnica e a velocidade do swing.', tradeoff: 'A resposta firme e o calibre maior podem reduzir conforto e potência acessível.', },
+  { id: 'hyperg-soft', title: 'Efeito com tensão reduzida', layout: 'Full bed', mains: strings.hypergSoft, crosses: strings.hypergSoft, scores: scores(3,4,2,5,3,3,2,3,4), benefit: 'Uma alternativa de copoliéster para explorar efeito e controle. A versão Soft continua sendo poliéster e não garante conforto.', tradeoff: 'A tensão reduzida pode mudar a trajetória e o controle. Continua mais firme que muitas opções de multifilamento e exige acompanhar a perda de resposta.', },
   { id: 'gut-poly', title: 'Potência e controle em dupla', layout: 'Híbrido', mains: strings.gut, crosses: strings.ptp, scores: scores(4,4,4,4,3,1,4,3,4), benefit: 'Tripa natural nas verticais e poliéster nas horizontais combinam uma resposta elástica com maior firmeza do que a tripa em full bed.', tradeoff: 'Custo alto; o poliéster pode cortar a tripa e perder resposta antes de as verticais romperem.', },
   { id: 'poly-multi', title: 'Uma ponte para o híbrido', layout: 'Híbrido', mains: strings.ptp, crosses: strings.velocity, scores: scores(3,4,3,4,3,3,2,3,3), benefit: 'Poliéster nas verticais mantém uma resposta orientada a controle; multifilamento nas horizontais oferece uma combinação diferente de um full bed de poliéster.', tradeoff: 'Continua contendo poliéster e não garante conforto. As horizontais podem se desgastar mais rápido.', },
   { id: 'multi-nylon', title: 'Híbrido sem poliéster', layout: 'Híbrido', mains: strings.xone, crosses: strings.nylon, scores: scores(4,3,4,2,2,3,3,2,4), benefit: 'Multifilamento nas verticais e nylon nas horizontais permitem explorar um híbrido sem adicionar poliéster.', tradeoff: 'É mais trabalhoso que um full bed e não garante mais durabilidade ou efeito; a vantagem precisa ser confirmada em quadra.', },
@@ -65,13 +67,21 @@ export function recommend(a: Answers): Recommendation[] {
   const density = stringCount ? stringCount * 100 / (headSize ?? 100) : undefined
   const spacing = density === undefined ? 'não classificado' : density >= 342 ? 'mais denso' : density <= 310 ? 'mais aberto' : 'intermediário'
   const racketContext = `${a.racket} · ${a.pattern}${headSize ? ` · cabeça de ${headSize} pol²` : ' · tamanho da cabeça não validado'}`
-  const softOnly = a.pain === 'Sim' || a.level === 'Iniciante'
+  const hasDiscomfort = a.pain === 'Sim'
+  const softOnly = a.level === 'Iniciante'
+  const hasPoly = (setup: Setup) => setup.mains.material === 'Poliéster' || setup.crosses.material === 'Poliéster'
   const eligible = setups.filter(s => !softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
-  const ranked = eligible.map(setup => ({ setup, score: 5 * goals.reduce((sum, goal) => sum + setup.scores[goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
-  const selected = ranked.slice(0, 3).map(entry => entry.setup)
+  const ranked = eligible.map(setup => ({ setup, score: 5 * goals.reduce((sum, goal) => sum + setup.scores[goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  // Com desconforto, manter pelo menos duas alternativas sem poliéster.
+  const selected: Setup[] = []
+  for (const { setup } of ranked) {
+    if (hasDiscomfort && hasPoly(setup) && selected.some(hasPoly)) continue
+    selected.push(setup)
+    if (selected.length === 3) break
+  }
   // Uma alternativa híbrida ajuda a explorar combinações quando se busca controle/spin
   // ou preservar conforto ao mudar para uma resposta mais firme.
-  const exploreHybrid = !softOnly && currentLayout === 'Full bed' && (hasGoal('Controle') || hasGoal('Efeito (spin)') || (liked.includes('Controle') && (hasGoal('Conforto') || hasGoal('Potência'))))
+  const exploreHybrid = !softOnly && !hasDiscomfort && currentLayout === 'Full bed' && (hasGoal('Controle') || hasGoal('Efeito (spin)') || (liked.includes('Controle') && (hasGoal('Conforto') || hasGoal('Potência'))))
   if (exploreHybrid && !selected.some(s => s.layout === 'Híbrido')) {
     const hybrid = ranked.find(entry => entry.setup.layout === 'Híbrido')?.setup
     if (hybrid) selected[2] = hybrid
@@ -81,7 +91,7 @@ export function recommend(a: Answers): Recommendation[] {
     notes.add(`Raquete considerada: ${racketContext}. A combinação de padrão e área da cabeça é uma referência aproximada de encordoamento ${spacing}; não mede o espaçamento real nem o ângulo de saída.`)
     if (!headSize) notes.add('Sem tamanho validado, o ajuste considera apenas a contagem de cordas; não atribui propriedades específicas à marca ou à linha.')
     if (angleGoal || angleLiked) notes.add('Ângulo de saída (launch angle) é a inclinação inicial da trajetória da bola ao deixar as cordas. Tensão, material, espaçamento, atrito e técnica interagem; não é o mesmo que quantidade de spin e não pode ser previsto só pela tensão.')
-    if (a.pain === 'Sim') notes.add('O desconforto tem prioridade: a regra exclui poliéster e não aumenta a tensão para perseguir um ângulo mais baixo.')
+    if (hasDiscomfort) notes.add('O desconforto dá mais peso ao conforto. O poliéster pode entrar como uma alternativa de tensão reduzida; reduzir tensão não elimina sua rigidez nem garante ausência de dor.')
     else if (a.level === 'Iniciante') notes.add('Para iniciantes, a regra não aumenta a tensão nem inclui poliéster para perseguir o ângulo desejado.')
     if (goals.length === 2) notes.add(`Objetivos combinados com o mesmo peso: ${goals.join(' e ')}. Ajustes de tensão em sentidos opostos são compensados, em vez de prometer melhorar tudo ao mesmo tempo.`)
     if (angleGoal && angleLiked && angleGoal !== angleLiked) notes.add('O ângulo que você quer preservar entra em conflito com o ângulo desejado: o ajuste é reduzido e exige confirmar sua prioridade em quadra.')
@@ -110,7 +120,11 @@ export function recommend(a: Answers): Recommendation[] {
       }
       if (a.pain === 'Sim') delta = Math.min(delta, -2)
       if (a.level === 'Iniciante') delta = Math.min(delta, 0)
-      const raw = base + delta
+      let raw = base + delta
+      if (hasDiscomfort && spec.material === 'Poliéster') {
+        raw = Math.min(raw, base - 4, 45)
+        notes.add('Para a direção com poliéster e desconforto relatado, o protótipo testa pelo menos 4 lb abaixo da referência e no máximo 45 lb, respeitando o limite inferior do seletor. É um teto heurístico, não uma faixa clinicamente segura ou validada para a raquete.')
+      }
       const adjusted = Math.max(MIN_TENSION, Math.min(MAX_TENSION, Math.round(raw)))
       if (adjusted !== raw) notes.add('O ajuste foi limitado à faixa de 30–69 lb do protótipo; isso não valida a faixa da sua raquete.')
       return adjusted
@@ -133,12 +147,12 @@ export function recommend(a: Answers): Recommendation[] {
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
-      reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${softOnly ? ' O perfil informado prioriza opções sem poliéster.' : ''}`,
+      reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${softOnly ? ' O perfil iniciante prioriza opções sem poliéster.' : hasDiscomfort ? hasPoly(setup) ? ' Esta é uma alternativa com poliéster em tensão reduzida, para avaliar com o encordoador.' : ' Esta opção prioriza materiais sem poliéster para comparar o conforto.' : ''}`,
       preservation,
       layoutChange: setup.layout === currentLayout ? `Mantém ${currentLayout}` : `Muda de ${currentLayout} para ${setup.layout}`,
       tensions: { mains, crosses, explanation: [...notes].join(' ') },
       tensionComparison: setup.layout === 'Full bed' ? currentLayout === 'Full bed' ? deltaText(mains, oldMains) : `Mains ${oldMains} / crosses ${oldCrosses} lb → ${mains} lb em toda a raquete` : `Mains: ${deltaText(mains, oldMains)} · Crosses: ${deltaText(crosses, oldCrosses)}`,
-      caution: 'Ponto de teste, sujeito à faixa do fabricante e à avaliação do encordoador. A faixa da sua raquete ainda não foi validada pelo app. Trocar material e tensão juntos dificulta isolar o efeito de cada mudança.',
+      caution: 'Ponto de teste, sujeito à faixa do fabricante e à avaliação do encordoador. A faixa da sua raquete ainda não foi validada pelo app. Trocar material e tensão juntos dificulta isolar o efeito de cada mudança.' + (hasDiscomfort && hasPoly(setup) ? ' Baixa tensão não torna o poliéster uma opção isenta de risco para quem sente desconforto; se houver dor, interrompa o teste e procure avaliação profissional.' : ''),
     }
   })
 }
