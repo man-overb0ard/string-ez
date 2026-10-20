@@ -84,3 +84,7 @@ O relato de desconforto não exclui automaticamente poliéster para jogadores in
 Cada direção com poliéster e desconforto recebe uma referência de teste de no máximo 45 lb e pelo menos 4 lb abaixo da referência atual, respeitando o limite inferior de 30 lb do protótipo. Os demais ajustes continuam considerando objetivos, material e raquete. O valor de 45 lb é uma decisão heurística de produto para revisão, não uma faixa clinicamente segura nem homologada pelo fabricante. Se a tensão já está no mínimo, a regra explica o limite, sem inventar uma redução abaixo do seletor. Em híbridos, a redução aplica-se à direção com poliéster, preservando as referências independentes.
 
 Baixa tensão não elimina a rigidez do poliéster nem garante ausência de dor. A orientação é avaliar a configuração com o encordoador, respeitar a faixa do fabricante e interromper o teste se houver dor. Nenhum dos relatos físicos específicos gera uma prescrição clínica.
+
+## Lançamentos conferidos em fontes oficiais
+
+Defyer (Wilson), Fire (Tecnifibre), MUSE (Yonex), Squared (HEAD) e Axis (Diadem) estão disponíveis, totalizando 19 variantes técnicas. Os registros guardam padrão, tamanho da cabeça e URL oficial; as recomendações usam esses valores. A revisão também adicionou Wilson RF 01, completou variantes Q+ da Pro Kennex e corrigiu Pure Aero 98 para 16 × 20. Consulte [a revisão e suas fontes](docs/catalog-review.md) para escopo, especificações e limitações. Registros antigos sem fonte ainda não têm essa mesma verificação individual.

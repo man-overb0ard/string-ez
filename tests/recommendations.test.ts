@@ -233,10 +233,10 @@ describe('dois objetivos e ângulo de saída', () => {
 describe('famílias Pro Kennex', () => {
   it('separa Ki e Q+ sem duplicar o prefixo no modelo ou perder padrões', () => {
     assert.deepEqual(rackets['Pro Kennex'].Ki.map(model => model.name), ['5', '10', '15'])
-    assert.deepEqual(rackets['Pro Kennex']['Q+'].map(model => model.name), ['5', '15', 'Tour', 'Tour Pro'])
+    assert.deepEqual(rackets['Pro Kennex']['Q+'].map(model => model.name), ['5', '15', 'Tour', 'Tour Pro', '5 Pro', '20', '30'])
     assert.deepEqual(getPatterns('Pro Kennex', 'Ki', '5'), ['16 × 20'])
     assert.deepEqual(getPatterns('Pro Kennex', 'Q+', '5'), ['16 × 20'])
-    assert.deepEqual(getPatterns('Pro Kennex', 'Q+', 'Tour Pro'), ['16 × 19', '18 × 20'])
+    assert.deepEqual(getPatterns('Pro Kennex', 'Q+', 'Tour Pro'), ['18 × 20'])
   })
 })
 
@@ -278,5 +278,49 @@ describe('poliéster com desconforto físico', () => {
     assert.ok(poly)
     assert.equal(poly.tensions.mains, 30)
     assert.match(poly.tensions.explanation, /limitado/)
+  })
+})
+
+
+describe('linhas conferidas nas fichas oficiais', () => {
+  it('inclui as cinco famílias solicitadas com todas as variantes técnicas conferidas', () => {
+    const families: [string, string, string[]][] = [
+      ['Wilson', 'Defyer', ['98 Pro', '100', '100L', '100UL']],
+      ['Tecnifibre', 'Fire', ['305S', '300', '285', '270', '260 OS', '255']],
+      ['Yonex', 'MUSE', ['98', '100', '100L', '100SL', '107']],
+      ['Head', 'Squared', ['Squared']],
+      ['Diadem', 'Axis', ['98', '100', 'Team']],
+    ]
+    for (const [brand, line, names] of families) {
+      assert.deepEqual(rackets[brand][line].map(entry => entry.name), names)
+      for (const model of rackets[brand][line]) {
+        assert.equal(model.patterns.length, 1)
+        assert.ok(model.headSize && model.source?.startsWith('https://'))
+      }
+    }
+  })
+  it('usa os padrões reais em vez de herdar 16 × 19 e as áreas verificadas no cálculo', () => {
+    for (const name of ['98', '100', '100L', '100SL', '107']) assert.deepEqual(getPatterns('Yonex', 'MUSE', name), ['16 × 18'])
+    assert.deepEqual(getPatterns('Wilson', 'Defyer', '98 Pro'), ['16 × 20'])
+    assert.deepEqual(getPatterns('Wilson', 'Defyer', '100L'), ['16 × 19'])
+    assert.deepEqual(getPatterns('Head', 'Squared', 'Squared'), ['16 × 18'])
+    assert.deepEqual(getPatterns('Diadem', 'Axis', '98'), ['16 × 20'])
+    assert.deepEqual(getPatterns('Diadem', 'Axis', 'Team'), ['16 × 19'])
+    assert.equal(getHeadSize('Tecnifibre', 'Fire', '305S'), 98)
+    assert.equal(getHeadSize('Tecnifibre', 'Fire', '260 OS'), 110)
+    assert.equal(getHeadSize('Head', 'Squared', 'Squared'), 100)
+    assert.equal(getHeadSize('Diadem', 'Axis', 'Team'), 100)
+    const results = recommend({ ...base, racket: 'Yonex · MUSE · 107', pattern: getPatterns('Yonex', 'MUSE', '107')[0], headSize: getHeadSize('Yonex', 'MUSE', '107'), goals: [launchLow] })
+    assert.equal(results.length, 3)
+    assert.match(results[0].tensions.explanation, /MUSE.*16 × 18.*107 pol²/)
+  })
+  it('complementa a revisão sem apagar modelos existentes', () => {
+    assert.equal(getHeadSize('Wilson', 'RF 01', 'Pro'), 98)
+    assert.deepEqual(getPatterns('Babolat', 'Pure Aero', '98'), ['16 × 20'])
+    assert.ok(rackets.Babolat['Pure Aero'].some(model => model.name === 'Team'))
+    assert.ok(rackets.Wilson.Blade.some(model => model.name === '98'))
+    assert.deepEqual(getPatterns('Pro Kennex', 'Q+', '5 Pro'), ['16 × 20'])
+    assert.equal(getHeadSize('Pro Kennex', 'Q+', '30'), 119)
+    assert.equal(recommend({ ...base, headSize: 119 })[0].tensions.explanation.includes('119 pol²'), true)
   })
 })

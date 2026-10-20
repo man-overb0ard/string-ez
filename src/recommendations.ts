@@ -63,7 +63,7 @@ export function recommend(a: Answers): Recommendation[] {
   const angleLiked = liked.find(factor => factor === launchLow || factor === launchHigh)
   const patternMatch = /^(\d+) × (\d+)$/.exec(a.pattern)
   const stringCount = patternMatch ? Number(patternMatch[1]) * Number(patternMatch[2]) : undefined
-  const headSize = a.headSize && a.headSize >= 90 && a.headSize <= 115 ? a.headSize : undefined
+  const headSize = a.headSize && a.headSize >= 90 && a.headSize <= 130 ? a.headSize : undefined
   const density = stringCount ? stringCount * 100 / (headSize ?? 100) : undefined
   const spacing = density === undefined ? 'não classificado' : density >= 342 ? 'mais denso' : density <= 310 ? 'mais aberto' : 'intermediário'
   const racketContext = `${a.racket} · ${a.pattern}${headSize ? ` · cabeça de ${headSize} pol²` : ' · tamanho da cabeça não validado'}`
