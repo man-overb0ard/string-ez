@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { factors, recommend, recommendationText, type Answers } from '../src/recommendations.ts'
 import { stringCatalog, specifyString, findString, resolveStringMaterial } from '../src/stringCatalog.ts'
 import { improvementFactors, launchLow, launchHigh, nothingLiked, togglePreference, canSelectPreference } from '../src/preferences.ts'
-import { getHeadSize, getPatterns } from '../src/rackets.ts'
+import { rackets, getHeadSize, getPatterns } from '../src/rackets.ts'
 const base: Answers = { level: 'Intermediário', racket: 'VCORE 98', pattern: '16 × 19', previous: 'Poliéster', tension: '50 lb', goals: ['Controle'], pain: 'Não', layout: 'Full bed', liked: [] }
 
 describe('configurações recomendadas', () => {
@@ -226,5 +226,16 @@ describe('dois objetivos e ângulo de saída', () => {
     assert.deepEqual(togglePreference([launchLow], nothingLiked), [nothingLiked])
     assert.deepEqual(togglePreference([nothingLiked], launchHigh), [launchHigh])
     for (const goals of [[], ['Controle','Conforto','Potência'], [launchLow,launchHigh]]) assert.deepEqual(recommend({ ...base, goals }), [])
+  })
+})
+
+
+describe('famílias Pro Kennex', () => {
+  it('separa Ki e Q+ sem duplicar o prefixo no modelo ou perder padrões', () => {
+    assert.deepEqual(rackets['Pro Kennex'].Ki.map(model => model.name), ['5', '10', '15'])
+    assert.deepEqual(rackets['Pro Kennex']['Q+'].map(model => model.name), ['5', '15', 'Tour', 'Tour Pro'])
+    assert.deepEqual(getPatterns('Pro Kennex', 'Ki', '5'), ['16 × 20'])
+    assert.deepEqual(getPatterns('Pro Kennex', 'Q+', '5'), ['16 × 20'])
+    assert.deepEqual(getPatterns('Pro Kennex', 'Q+', 'Tour Pro'), ['16 × 19', '18 × 20'])
   })
 })
