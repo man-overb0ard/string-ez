@@ -19,7 +19,7 @@ export default function ThemePicker({ selected, onSelect }: { selected: ThemeId;
         aria-label={`Tema ${theme.name}`} aria-pressed={selected === theme.id} title={`${theme.fullName} · ${theme.outfit}`}
         style={{ '--outfit-one': theme.colors[0], '--outfit-two': theme.colors[1], '--outfit-three': theme.colors[2], '--portrait-position': theme.position } as CSSProperties}
         onClick={() => onSelect(theme.id)}>
-        <span className="theme-portrait" aria-hidden="true" />
+        <span data-player={theme.id} className="theme-portrait" aria-hidden="true" />
         <span className="theme-option-name">{theme.name}</span>
         <span className="theme-swatches" aria-hidden="true"><i /><i /><i /></span>
         <span className="theme-check" aria-hidden="true">{selected === theme.id ? '✓' : ''}</span>

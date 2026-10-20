@@ -1,4 +1,5 @@
 :root {
+  color-scheme:light;
   --page-bg:#f7f7ef; --text:#183c2e; --muted:#5d6b5b; --muted-small:#64715f;
   --surface:#fffefa; --border:#cbd3c3; --primary:#d4ee74; --on-primary:#173b2d; --primary-hover:#c4df61;
   --accent:#42673c; --soft:#e7efcf; --soft-hover:#edf2df; --notice:#eaf0dc; --panel:#edf0e3;
@@ -17,10 +18,11 @@
   --cross-bg:#eee8f0; --cross:#49384f; --cross-border:#6c5274; --focus:#9b235b; --frame:#7b6775;
 }
 :root[data-theme=federer] {
-  --page-bg:#fff7fb; --text:#152b49; --muted:#665d73; --muted-small:#6c6178;
-  --surface:#fffcfe; --border:#dcc9d7; --primary:#cf006f; --on-primary:#ffffff; --primary-hover:#b70061;
-  --accent:#941050; --soft:#f5dfe9; --soft-hover:#f9eaf1; --notice:#f6e5ef; --panel:#eee9f2;
-  --cross-bg:#e4ebf6; --cross:#243f68; --cross-border:#35517d; --focus:#a8125d; --frame:#66758c;
+  color-scheme:dark;
+  --page-bg:#111214; --text:#f3f2ef; --muted:#bec2c8; --muted-small:#afb5bd;
+  --surface:#1c1e21; --border:#68707a; --primary:#e5e7eb; --on-primary:#131416; --primary-hover:#ffffff;
+  --accent:#d1d5db; --soft:#292d33; --soft-hover:#32373e; --notice:#22262c; --panel:#25292e;
+  --cross-bg:#202d37; --cross:#b5cee3; --cross-border:#86a2ba; --focus:#f4d780; --frame:#a1a8b3; --ball-seam:#272b31;
 }
 :root[data-theme=nadal] {
   --page-bg:#f8f5ff; --text:#312a4b; --muted:#665a77; --muted-small:#6b607b;
@@ -38,7 +40,7 @@
 .theme-portrait{display:block;width:100%;height:120px;background-image:url('./assets/player-outfits.png');background-repeat:no-repeat;background-size:500% auto;background-position:var(--portrait-position) 20%;border-radius:9px}
 .theme-option-name{font-size:12px;font-weight:700}
 .theme-swatches{display:flex;gap:4px}
-.theme-swatches i{display:block;width:13px;height:5px;border-radius:2px;background:var(--outfit-one);box-shadow:0 0 0 1px #00000012}
+.theme-swatches i{display:block;width:13px;height:5px;border-radius:2px;background:var(--outfit-one);box-shadow:0 0 0 1px var(--border)}
 .theme-swatches i:nth-child(2){background:var(--outfit-two)}
 .theme-swatches i:nth-child(3){background:var(--outfit-three)}
 .theme-check{position:absolute;right:6px;top:6px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;font-size:11px;font-weight:700;background:transparent}
@@ -49,3 +51,4 @@
 @media(prefers-reduced-motion:reduce){.theme-option{transition:none}.theme-option:hover{transform:none}}
 .welcome,.welcome .intro,.theme-picker{min-width:0}.welcome .intro{width:100%}.theme-options{min-width:0;max-width:100%}
 .outfit-mobile-hint{display:none}@media(max-width:700px){.outfit-desktop-hint{display:none}.outfit-mobile-hint{display:inline}}
+.theme-portrait[data-player=federer]{background-image:url('./assets/federer-black.png');background-size:auto 145%;background-position:center 5%}

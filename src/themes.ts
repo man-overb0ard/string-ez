@@ -2,7 +2,7 @@ export const themes = [
   { id: 'alcaraz', name: 'Alcaraz', fullName: 'Carlos Alcaraz', outfit: 'Ivory, verde e turquesa', colors: ['#f7f7ef', '#183c2e', '#24aaa4'], browserColor: '#24563e', position: '0%' },
   { id: 'guga', name: 'Guga', fullName: 'Gustavo Kuerten', outfit: 'Amarelo e azul-marinho', colors: ['#f5c84c', '#19385e', '#fff9e8'], browserColor: '#19385e', position: '25%' },
   { id: 'agassi', name: 'Agassi', fullName: 'Andre Agassi', outfit: 'Rosa, preto e branco', colors: ['#f6529c', '#241d28', '#fff7fa'], browserColor: '#92335f', position: '50%' },
-  { id: 'federer', name: 'Federer', fullName: 'Roger Federer', outfit: 'Magenta e azul-marinho', colors: ['#cf006f', '#152b49', '#fff7fb'], browserColor: '#152b49', position: '75%' },
+  { id: 'federer', name: 'Federer', fullName: 'Roger Federer', outfit: 'All black · modo noturno', colors: ['#111214', '#52565e', '#e5e7eb'], browserColor: '#111214', position: '75%' },
   { id: 'nadal', name: 'Nadal', fullName: 'Rafael Nadal', outfit: 'Lilás e coral', colors: ['#b8a1de', '#ff704b', '#312a4b'], browserColor: '#60468d', position: '100%' },
 ] as const
 export type ThemeId = typeof themes[number]['id']
