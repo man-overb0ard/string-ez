@@ -1,6 +1,6 @@
 # String EZ
 
-Protótipo mobile-first em português para recomendar encordoamentos de tênis. React + TypeScript + Vite, sem backend, cadastro, chave de API ou custo de IA.
+Aplicação mobile-first em português para explorar encordoamentos de tênis. React + TypeScript + Vite, sem backend, cadastro, chave de API ou custo de IA.
 
 ## Desenvolvimento
 
@@ -18,16 +18,34 @@ npm run lint
 npm test
 ```
 
-## Fluxo e limites
+## Fluxo
 
-Boas-vindas → marca → linha → modelo → perfil e histórico → três recomendações → copiar resumo para um encordoador. As respostas permanecem em memória até recarregar. Não há integração com ChatGPT.
+Boas-vindas → marca → linha → modelo → padrão, quando necessário → nível → full bed/híbrido → tipo de corda e tensão atuais → fatores a preservar → objetivo → desconforto → três configurações → copiar resumo.
 
-As regras usam nível, objetivo e desconforto para selecionar famílias de cordas. Marca/modelo, padrão, corda e tensão anteriores ficam no resumo para consulta ao encordoador; ainda não existe catálogo validado de raquetes nem cálculo personalizado de tensão. Confirme sempre a faixa do fabricante. As recomendações são educativas e precisam de revisão técnica antes de lançamento público; não tratam lesões.
+- A seleção única avança ao toque ou à ativação pelo teclado. Voltar permite revisar e selecionar novamente a mesma resposta.
+- A tensão é uma cartela de **30 a 60 lb**, só com inteiros. Não há kg, slider nem valor pré-selecionado. Tocar no número avança; voltar preserva o número.
+- Full bed coleta um tipo de corda e uma tensão. Híbrido coleta tipos e tensões independentes para mains (verticais) e crosses (horizontais). Os cabeçalhos distinguem as direções por texto, setas e cores. Trocar a configuração limpa as respostas dependentes.
+- Antes do objetivo, é possível marcar vários fatores a preservar. Continuar confirma a seleção. “Nada em especial” é exclusivo e permite seguir sem fatores a preservar.
+- As respostas permanecem em memória até recarregar; não são enviadas a serviços externos.
 
-A interface web pode futuramente ser empacotada com Capacitor para Android/iOS. Esse empacotamento ainda não está implementado.
+## Recomendações
 
-O catálogo inicial em `src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince e Pro Kennex, com padrões por modelo. Não há opções “não sei”: a identificação exige marca, linha e modelo do catálogo. Para um padrão único, a pergunta é suprimida e o padrão entra automaticamente no resumo. Para múltiplos padrões, o usuário escolhe entre as variantes cadastradas. Trocar marca, linha ou modelo limpa o padrão anterior. Algumas variantes abrangem gerações diferentes: o catálogo ainda precisa de revisão e segmentação por ano antes de ser considerado completo.
+`src/recommendations.ts` contém o catálogo de cordas e regras determinísticas. Não existe integração com ChatGPT.
 
-As opções de múltipla escolha avançam ao toque ou à ativação pelo teclado, sem botão Continuar. Voltar permite revisar e selecionar novamente a mesma resposta. A tensão atual usa um seletor deslizante de 30 a 60 lb, em incrementos de 0,5 lb, com alternância de exibição entre lb e kg sem alterar a tensão física. O valor inicial de 45 lb é apenas a posição inicial do controle, não uma recomendação. Continuar confirma a seleção; voltar preserva valor e unidade.
+Cada opção informa marca/modelo, material, calibre, full bed ou híbrido, cordas por direção, tensão sugerida em lb, comparação com a atual, motivos, pontos a preservar e concessões. O resumo copiado contém os mesmos detalhes.
 
-Antes de escolher o tipo de corda atual, o usuário seleciona Full bed ou Híbrido, com diagramas de cores ilustrativas. Full bed pergunta um tipo de corda para toda a raquete; Híbrido pergunta separadamente mains (verticais) e crosses (horizontais), permitindo a mesma família de material nas duas direções. Trocar a configuração limpa os tipos anteriores. O resumo e a cópia incluem apenas as perguntas do caminho selecionado. Essa informação compõe o histórico; o motor de recomendações segue usando nível, objetivo e desconforto. No híbrido, há seletores independentes de tensão para mains e crosses, com valores e unidades próprios. Cabeçalhos em destaque identificam verticais (verde, ↕) e horizontais (laranja, ↔) nas perguntas de corda e tensão. Voltar preserva ambas as seleções; trocar a configuração limpa as tensões anteriores. Full bed mantém um único seletor. O resumo e o texto copiado incluem as duas tensões do híbrido.
+As configurações recebem classificações qualitativas internas por fator. O objetivo tem peso 5; cada fator a preservar, peso 2. Há uma preferência pequena por manter configuração/material. Iniciantes e pessoas com desconforto recebem apenas configurações sem poliéster. Em alguns perfis de full bed, uma das três opções explora o híbrido. A ordenação é determinística, não é uma previsão de desempenho nem uma medição de laboratório.
+
+A tensão parte do histórico informado por direção. As regras consideram objetivo, material anterior e proposto, conflito entre conforto/controle e padrão 18 × 20. Ao propor full bed após híbrido, a referência é a média arredondada das tensões atuais; híbridos preservam referências separadas. As sugestões ficam entre 30 e 60 lb e explicam quando esse limite afeta o ajuste. Histórico inválido não gera tensões inventadas.
+
+**Limites:** a faixa de tensão do fabricante de cada raquete ainda não está validada. Os números são pontos de teste que precisam de confirmação do encordoador e do fabricante. O catálogo de cordas é inicial, sem preços, estoque ou consulta em tempo real. As regras e classificações precisam de revisão de um especialista antes de lançamento público. Nenhuma recomendação trata lesões. Não existe garantia de preservar simultaneamente fatores em conflito.
+
+## Catálogo de raquetes
+
+`src/rackets.ts` inclui Yonex, Babolat, Head, Wilson, Prince e Pro Kennex. Não há opções “não sei”: a identificação exige marca, linha e modelo do catálogo. Modelos de padrão único pulam a pergunta; variantes oferecem os padrões cadastrados. Trocar marca, linha ou modelo limpa o padrão anterior. Algumas variantes abrangem gerações diferentes: ainda é necessário revisar e segmentar por ano. Marca/modelo identificam a raquete, mas não fornecem uma validação de tensão neste protótipo.
+
+## Validação
+
+Os testes em `tests/recommendations.test.ts` cobrem configurações únicas, produtos/tensões, filtros por dor/experiência, influência dos fatores preservados, transição para híbrido, cálculo por direção, limites, histórico inválido e padrões de raquetes. O teste combinado percorre 480 perfis.
+
+O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção múltipla, cartela, voltar, resumo e clipboard. O projeto pode futuramente ser empacotado com Capacitor para Android/iOS; isso ainda não está implementado.

@@ -1,27 +1,91 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { recommend, type Answers } from '../src/recommendations.ts'
+import { factors, recommend, recommendationText, type Answers } from '../src/recommendations.ts'
 import { getPatterns } from '../src/rackets.ts'
-const base: Answers = {level:'Intermediário', racket:'VCORE 98', pattern:'16 × 19', previous:'Poliéster', tension:'50 lb', goal:'Controle', pain:'Não'}
-describe('recomendações', () => {
-  it('retorna três opções distintas para cada perfil e prioriza conforto para iniciantes ou desconforto', () => {
-    for (const level of ['Iniciante','Intermediário','Avançado']) for (const pain of ['Sim','Não']) for (const goal of ['Conforto','Controle','Potência','Efeito (spin)','Durabilidade']) {
-      const result = recommend({...base, level, pain, goal})
-      assert.equal(result.length, 3)
-      assert.equal(new Set(result.map(r => r.material)).size, 3)
-      if (pain === 'Sim' || level === 'Iniciante') {
-        assert.equal(result[0].material, 'Multifilamento')
-        assert.ok(result.every(r => !r.material.toLowerCase().includes('poliéster')))
-      }
+const base: Answers = { level: 'Intermediário', racket: 'VCORE 98', pattern: '16 × 19', previous: 'Poliéster', tension: '50 lb', goal: 'Controle', pain: 'Não', layout: 'Full bed', liked: [] }
+
+describe('configurações recomendadas', () => {
+  it('gera três configurações únicas, com produtos e tensões inteiras, em todos os perfis válidos', () => {
+    for (const level of ['Iniciante', 'Intermediário', 'Avançado'])
+      for (const pain of ['Sim', 'Não'])
+        for (const goal of ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade'])
+          for (const liked of [[], ...factors.map(f => [f])])
+            for (const layout of ['Full bed', 'Híbrido']) {
+              const result = recommend({ ...base, level, pain, goal, liked, layout, mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '60 lb', crossesTension: '30 lb' })
+              assert.equal(result.length, 3)
+              assert.equal(new Set(result.map(r => r.id)).size, 3)
+              for (const r of result) {
+                for (const spec of [r.mains, r.crosses]) {
+                  assert.ok(spec.brand && spec.model && spec.gauge && spec.material)
+                  if (pain === 'Sim' || level === 'Iniciante') assert.notEqual(spec.material, 'Poliéster')
+                }
+                for (const value of [r.tensions.mains, r.tensions.crosses]) {
+                  assert.ok(Number.isInteger(value) && value >= 30 && value <= 60)
+                }
+                assert.ok(r.reason && r.tradeoff && r.preservation && r.tensions.explanation)
+              }
+            }
+  })
+  it('inclui uma alternativa híbrida para um full bed experiente que busca controle', () => {
+    const results = recommend(base)
+    const hybrid = results.find(r => r.layout === 'Híbrido')
+    assert.ok(hybrid)
+    assert.equal(hybrid.layoutChange, 'Muda de Full bed para Híbrido')
+    assert.notEqual(hybrid.mains.model, hybrid.crosses.model)
+  })
+  it('os pontos a preservar alteram a escolha de configuração e o ajuste de tensão', () => {
+    const plain = recommend(base)
+    const comfort = recommend({ ...base, liked: ['Conforto'] })
+    assert.notDeepEqual(plain.map(r => r.id), comfort.map(r => r.id))
+    const shared = comfort.find(r => r.id === plain[0].id)
+    assert.ok(shared)
+    assert.ok(shared.tensions.mains < plain[0].tensions.mains)
+    assert.match(shared.preservation, /Conforto/)
+    assert.match(shared.preservation, /possível perda/)
+  })
+  it('considera separadamente as tensões de um híbrido e as inclui na cópia', () => {
+    const results = recommend({ ...base, layout: 'Híbrido', mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '54 lb', crossesTension: '48 lb', liked: ['Conforto'] })
+    const hybrid = results.find(r => r.layout === 'Híbrido')
+    assert.ok(hybrid)
+    assert.notEqual(hybrid.tensions.mains, hybrid.tensions.crosses)
+    assert.match(hybrid.tensionComparison, /Mains: 54/)
+    assert.match(hybrid.tensionComparison, /Crosses: 48/)
+    const copied = recommendationText(hybrid)
+    assert.match(copied, /Mains \(verticais\):/)
+    assert.match(copied, /Crosses \(horizontais\):/)
+    assert.ok(copied.includes(hybrid.mains.model) && copied.includes(hybrid.crosses.model))
+    assert.match(copied, /faixa.*fabricante/)
+  })
+  it('usa o objetivo, o material atual e o padrão no ajuste de tensão', () => {
+    const normal = recommend({ ...base, goal: 'Potência' })
+    const dense = recommend({ ...base, goal: 'Potência', pattern: '18 × 20' })
+    assert.equal(dense[0].id, normal[0].id)
+    assert.equal(dense[0].tensions.mains, normal[0].tensions.mains - 1)
+    const softCurrent = recommend({ ...base, previous: 'Multifilamento' })
+    const samePoly = softCurrent.find(r => r.id === 'ptp')
+    assert.ok(samePoly)
+    assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === 'ptp')!.tensions.mains)
+  })
+  it('não aumenta a tensão de um full bed que relata dor e exclui poliéster', () => {
+    for (const r of recommend({ ...base, pain: 'Sim' })) {
+      assert.ok(r.tensions.mains < 50)
+      assert.notEqual(r.mains.material, 'Poliéster')
+      assert.notEqual(r.crosses.material, 'Poliéster')
     }
   })
-  it('oferece copoliéster para controle e calibre maior para durabilidade em perfil experiente sem dor', () => {
-    assert.equal(recommend(base)[0].material, 'Copoliéster')
-    assert.equal(recommend({...base, goal:'Durabilidade'})[0].gauge, '1,30 mm')
+  it('limita sugestões às bordas do protótipo e explica quando o ajuste foi limitado', () => {
+    for (const tension of ['30 lb', '60 lb']) {
+      const r = recommend({ ...base, tension, goal: tension === '30 lb' ? 'Conforto' : 'Controle', previous: 'Multifilamento' })
+      assert.ok(r.every(s => s.tensions.mains >= 30 && s.tensions.crosses <= 60))
+      assert.ok(r.some(s => s.tensions.explanation.includes('limitado')))
+    }
+  })
+  it('não inventa tensões para históricos ausentes, fora dos limites ou na unidade antiga', () => {
+    for (const tension of ['', '23 kg', '29 lb', '61 lb', '50.5 lb', '50garbage lb']) assert.deepEqual(recommend({ ...base, tension }), [])
+    assert.deepEqual(recommend({ ...base, layout: 'Híbrido', mainsTension: '50 lb' }), [])
   })
 })
 
-// A pergunta depende das variantes do modelo, nunca de uma lista global de padrões.
 describe('padrões por modelo', () => {
   it('identifica modelos de padrão único e variantes de um mesmo modelo', () => {
     assert.deepEqual(getPatterns('Yonex', 'VCORE', '98'), ['16 × 19'])
