@@ -16,5 +16,5 @@ export function togglePreference(current: string[], value: string, limit = Infin
   return remaining.length < limit ? [...remaining, value] : current
 }
 export function canSelectPreference(current: string[], value: string, limit: number): boolean {
-  return current.includes(value) || current.length < limit || current.includes(oppositeAngle(value) ?? '')
+  return value === nothingLiked || current.includes(value) || current.length < limit || current.includes(oppositeAngle(value) ?? '')
 }

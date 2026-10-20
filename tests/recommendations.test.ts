@@ -1,3 +1,4 @@
+import { sortOptions } from '../src/sortOptions.ts'
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { factors, recommend, recommendationText, type Answers } from '../src/recommendations.ts'
@@ -357,5 +358,34 @@ describe('custo-benefício obrigatório e comparação de custo', () => {
     assert.match(result[0].costComparison,/Setup atual: faixa alta a premium/)
     const full = recommend({ ...base, goals:['Reduzir o custo'], previous:'Multifilamento', previousBrand:'Tecnifibre', previousModel:'X-One Biphase' })
     assert.match(full[0].costComparison,/Setup atual: faixa alta/)
+  })
+})
+
+describe('limite de pontos a preservar', () => {
+  it('permite três fatores, bloqueia o quarto e libera a troca após desmarcar', () => {
+    let selected = ['Conforto', 'Controle', 'Durabilidade']
+    assert.deepEqual(togglePreference(selected, 'Potência', 3), selected)
+    assert.equal(canSelectPreference(selected, 'Potência', 3), false)
+    selected = togglePreference(selected, 'Controle', 3)
+    assert.deepEqual(togglePreference(selected, 'Potência', 3), ['Conforto', 'Durabilidade', 'Potência'])
+    assert.equal(canSelectPreference(['Conforto','Controle','Durabilidade'], nothingLiked, 3), true)
+    assert.deepEqual(togglePreference(['Conforto','Controle','Durabilidade'], nothingLiked, 3), [nothingLiked])
+  })
+  it('mantém exclusão entre ângulos e valida o limite no motor', () => {
+    assert.deepEqual(togglePreference(['Conforto','Controle',launchLow], launchHigh, 3), ['Conforto','Controle',launchHigh])
+    assert.equal(recommend({ ...base, liked: ['Conforto','Controle','Durabilidade'] }).length, 3)
+    assert.deepEqual(recommend({ ...base, liked: ['Conforto','Controle','Durabilidade','Potência'] }), [])
+  })
+})
+
+
+describe('ordenação de opções', () => {
+  it('ordena nomes em português e números naturalmente sem alterar os catálogos', () => {
+    const models = ['100L','98','100','95']
+    assert.deepEqual(sortOptions(models), ['95','98','100','100L'])
+    assert.deepEqual(models, ['100L','98','100','95'])
+    assert.deepEqual(sortOptions(['Yonex','HEAD','Babolat','Diadem','Tecnifibre']), ['Babolat','Diadem','HEAD','Tecnifibre','Yonex'])
+    assert.deepEqual(sortOptions(['Potência','Ângulo de saída alto','Controle']), ['Ângulo de saída alto','Controle','Potência'])
+    assert.deepEqual(sortOptions(['Hyper-G Soft','Confidential','Hyper-G']), ['Confidential','Hyper-G','Hyper-G Soft'])
   })
 })

@@ -57,7 +57,8 @@ export function recommend(a: Answers): Recommendation[] {
   const oldCrosses = parseTension(currentLayout === 'Híbrido' ? a.crossesTension : a.tension)
   // Sem inventar tensões caso falte o histórico necessário.
   if (oldMains === null || oldCrosses === null) return []
-  const liked = (a.liked ?? []).filter((f): f is Factor => factors.includes(f as Factor))
+  const liked = [...new Set(a.liked ?? [])].filter((f): f is Factor => factors.includes(f as Factor))
+  if (liked.length > 3) return []
   const goals = [...new Set(a.goals)].filter((f): f is ImprovementFactor => improvementFactors.includes(f as ImprovementFactor))
   if (!goals.length || goals.length > 2 || (goals.includes(launchLow) && goals.includes(launchHigh))) return []
   const hasGoal = (goal: ImprovementFactor) => goals.includes(goal)

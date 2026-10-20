@@ -25,7 +25,7 @@ Boas-vindas → marca → linha → modelo → padrão, quando necessário → n
 - A seleção única avança ao toque ou à ativação pelo teclado. Voltar permite revisar e selecionar novamente a mesma resposta.
 - A tensão é uma cartela de **30 a 69 lb**, só com inteiros. Não há kg, slider nem valor pré-selecionado. Tocar no número avança; voltar preserva o número.
 - Full bed coleta um tipo de corda e uma tensão. Híbrido coleta tipos e tensões independentes para mains (verticais) e crosses (horizontais). Os cabeçalhos distinguem as direções por texto, setas e cores. Trocar a configuração limpa as respostas dependentes.
-- Antes do objetivo, é possível marcar vários fatores a preservar. Continuar confirma a seleção. “Nada em especial” é exclusivo e permite seguir sem fatores a preservar.
+- Antes do objetivo, é possível marcar até três fatores a preservar, com contador e bloqueio de novas escolhas ao atingir o limite. Continuar confirma a seleção. “Nada em especial” é exclusivo e permite seguir sem fatores a preservar.
 - As respostas permanecem em memória até recarregar; não são enviadas a serviços externos.
 
 ## Recomendações
@@ -106,3 +106,5 @@ Uma das três opções sempre recebe o selo **Custo-benefício**, independenteme
 `src/cost.ts` define faixas qualitativas de corda (baixa, média, alta e premium). Nylon usa faixa baixa, poliéster/multifilamento genéricos usam média e tripa natural usa premium. Os modelos X-One Biphase, NRG2, NXT, ALU Power e 4G têm ajuste indicativo para faixa alta. Em híbridos, a referência é a média das faixas das duas cordas, sem supor que a compra de dois sets inteiros custa a metade. Os modelos informados em “Quero especificar” entram na comparação.
 
 Cada recomendação informa sua faixa em relação ao setup inicial: inferior, igual ou superior. Se o atual já está na mesma faixa baixa da opção econômica, o app diz que não há economia demonstrada. A comparação e suas limitações também entram na cópia para o encordoador. **Não são cotações**: os custos reais dependem de loja, disponibilidade, set/rolo, mão de obra, durabilidade e frequência de troca. Sem esses valores, não há cálculo de economia em R$ nem de custo por hora. As faixas são heurísticas a revisar, não preços atuais do mercado brasileiro.
+
+As opções textuais do questionário, incluindo marcas, linhas e modelos de raquetes e cordas, aparecem em ordem alfabética em português, com comparação numérica natural (98 antes de 100). A cartela de tensões e o seletor de temas mantêm sua ordem própria.
