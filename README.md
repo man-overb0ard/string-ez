@@ -23,7 +23,7 @@ npm test
 Boas-vindas → marca → linha → modelo → padrão, quando necessário → nível → full bed/híbrido → tipo de corda e tensão atuais → fatores a preservar → objetivo → desconforto → três configurações → copiar resumo.
 
 - A seleção única avança ao toque ou à ativação pelo teclado. Voltar permite revisar e selecionar novamente a mesma resposta.
-- A tensão é uma cartela de **30 a 69 lb**, só com inteiros. Não há kg, slider nem valor pré-selecionado. Tocar no número avança; voltar preserva o número.
+- A tensão usa um teclado numérico no estilo telefone, com dígitos de 0 a 9, apagar e confirmar. Aceita inteiros de **30 a 69 lb**, sem valor pré-selecionado. Também permite digitar pelo teclado e confirmar com Enter; voltar preserva o número.
 - Full bed coleta um tipo de corda e uma tensão. Híbrido coleta tipos e tensões independentes para mains (verticais) e crosses (horizontais). Os cabeçalhos distinguem as direções por texto, setas e cores. Trocar a configuração limpa as respostas dependentes.
 - Antes do objetivo, é possível marcar até três fatores a preservar, com contador e bloqueio de novas escolhas ao atingir o limite. Continuar confirma a seleção. “Nada em especial” é exclusivo e permite seguir sem fatores a preservar.
 - As respostas permanecem em memória até recarregar; não são enviadas a serviços externos.
@@ -48,7 +48,7 @@ A tensão parte do histórico informado por direção. As regras consideram obje
 
 Os testes em `tests/recommendations.test.ts` cobrem configurações únicas, produtos/tensões, filtros por dor/experiência, influência dos fatores preservados, transição para híbrido, cálculo por direção, limites, histórico inválido e padrões de raquetes. O teste combinado percorre 600 perfis.
 
-O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção múltipla, cartela, voltar, resumo e clipboard. O projeto pode futuramente ser empacotado com Capacitor para Android/iOS; isso ainda não está implementado.
+O fluxo foi validado em Chromium com telas mobile e desktop, incluindo seleção múltipla, teclado de tensão, voltar, resumo e clipboard. O projeto pode futuramente ser empacotado com Capacitor para Android/iOS; isso ainda não está implementado.
 
 ## Identificar marca e modelo da corda atual
 
@@ -57,7 +57,7 @@ Em cada seleção de tipo de corda, “Quero especificar” abre marca → model
 O material é identificado pelo modelo para o cálculo das recomendações. A marca/modelo atual entra no resumo e no texto copiado; o motor ainda não usa medições específicas de rigidez de cada produto. No híbrido, mains e crosses têm seleções independentes. Trocar tipo limpa marca/modelo; trocar marca limpa modelo; selecionar novamente a mesma opção preserva o preenchimento. O caminho simplificado por material continua disponível.
 
 
-A cartela de tensão tem quatro linhas fixas de dez números: 30–39, 40–49, 50–59 e 60–69 lb. Em telas estreitas, apenas a cartela desliza horizontalmente para manter alvos de toque de pelo menos 44 px; a página não transborda. Ao voltar, a cartela posiciona o valor selecionado na área visível.
+O teclado de tensão tem três colunas: 1–9 nas primeiras linhas e apagar, 0 e confirmar na última. O visor aceita até dois dígitos e só permite avançar com valores entre 30 e 69 lb. Tensões de mains e crosses são independentes; ao voltar, o valor confirmado é restaurado. As cores seguem o tema selecionado, incluindo o modo noturno.
 
 As linhas adicionadas ao catálogo de raquetes são Tecnifibre T-Fight, TF40, TF-X1 e Tempo; Dunlop CX, SX e FX; Diadem Elevate e Nova. As variantes de padrão seguem o fluxo condicional, incluindo TF40 305/315 e CX 200 Tour. O catálogo continua inicial e não diferencia todas as gerações.
 
@@ -107,4 +107,4 @@ Uma das três opções sempre recebe o selo **Custo-benefício**, independenteme
 
 Cada recomendação informa sua faixa em relação ao setup inicial: inferior, igual ou superior. Se o atual já está na mesma faixa baixa da opção econômica, o app diz que não há economia demonstrada. A comparação e suas limitações também entram na cópia para o encordoador. **Não são cotações**: os custos reais dependem de loja, disponibilidade, set/rolo, mão de obra, durabilidade e frequência de troca. Sem esses valores, não há cálculo de economia em R$ nem de custo por hora. As faixas são heurísticas a revisar, não preços atuais do mercado brasileiro.
 
-As opções textuais do questionário, incluindo marcas, linhas e modelos de raquetes e cordas, aparecem em ordem alfabética em português, com comparação numérica natural (98 antes de 100). A cartela de tensões, o seletor de temas e os níveis mantêm sua ordem própria. Os níveis seguem Iniciante (NTRP 1.0 a 3.0), Intermediário (3.5 a 4.5) e Avançado (5.0 a 7.0); são faixas de referência aproximadas para a seleção no app.
+As opções textuais do questionário, incluindo marcas, linhas e modelos de raquetes e cordas, aparecem em ordem alfabética em português, com comparação numérica natural (98 antes de 100). O teclado de tensão, o seletor de temas e os níveis mantêm sua ordem própria. “Quero especificar” fica sempre por último, com destaque na paleta do tema. Os níveis seguem Iniciante (NTRP 1.0 a 3.0), Intermediário (3.5 a 4.5) e Avançado (5.0 a 7.0); são faixas de referência aproximadas para a seleção no app.
