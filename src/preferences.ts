@@ -3,7 +3,9 @@ export const launchHigh = 'Ângulo de saída alto'
 export const nothingLiked = 'Nada em especial'
 export const factors = ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade', 'Custo-benefício', 'Manutenção de tensão', launchLow, launchHigh] as const
 export type Factor = typeof factors[number]
-export const improvementFactors: readonly Factor[] = ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade', launchLow, launchHigh]
+export const reduceCost = 'Reduzir o custo'
+export type ImprovementFactor = Factor | typeof reduceCost
+export const improvementFactors: readonly ImprovementFactor[] = ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade', launchLow, launchHigh, reduceCost]
 export function oppositeAngle(value: string): string | undefined {
   return value === launchLow ? launchHigh : value === launchHigh ? launchLow : undefined
 }

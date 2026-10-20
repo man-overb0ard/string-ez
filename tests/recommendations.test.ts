@@ -64,9 +64,9 @@ describe('configurações recomendadas', () => {
     assert.equal(dense[0].id, normal[0].id)
     assert.equal(dense[0].tensions.mains, normal[0].tensions.mains - 1)
     const softCurrent = recommend({ ...base, previous: 'Multifilamento' })
-    const samePoly = softCurrent.find(r => r.id === 'ptp')
+    const samePoly = softCurrent.find(r => r.id === 'hyperg')
     assert.ok(samePoly)
-    assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === 'ptp')!.tensions.mains)
+    assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === 'hyperg')!.tensions.mains)
   })
   it('não aumenta a tensão de um full bed que relata dor e reduz mais a tensão do poliéster', () => {
     for (const r of recommend({ ...base, pain: 'Sim' })) {
@@ -209,9 +209,9 @@ describe('dois objetivos e ângulo de saída', () => {
   it('preservar o ângulo atual reduz o ajuste e explicita prioridades incompatíveis', () => {
     const plain = recommend({ ...base, goals: ['Controle'] })
     const preserved = recommend({ ...base, goals: ['Controle'], liked: [launchHigh] })
-    const poly = preserved.find(r => r.id === 'ptp')!
+    const poly = preserved.find(r => r.id === 'hyperg')!
     assert.ok(poly)
-    assert.ok(poly.tensions.mains < plain.find(r => r.id === 'ptp')!.tensions.mains)
+    assert.ok(poly.tensions.mains < plain.find(r => r.id === 'hyperg')!.tensions.mains)
     assert.match(poly.preservation, /Ângulo de saída alto/)
     const conflict = recommend({ ...base, goals: [launchLow], liked: [launchHigh] })
     assert.match(conflict[0].tensions.explanation, /conflito/)
@@ -322,5 +322,40 @@ describe('linhas conferidas nas fichas oficiais', () => {
     assert.deepEqual(getPatterns('Pro Kennex', 'Q+', '5 Pro'), ['16 × 20'])
     assert.equal(getHeadSize('Pro Kennex', 'Q+', '30'), 119)
     assert.equal(recommend({ ...base, headSize: 119 })[0].tensions.explanation.includes('119 pol²'), true)
+  })
+})
+
+describe('custo-benefício obrigatório e comparação de custo', () => {
+  it('sempre reserva uma opção de custo-benefício, sem perder diversidade e filtros', () => {
+    for (const goals of improvementFactors.map(goal => [goal])) for (const level of ['Iniciante','Intermediário','Avançado']) for (const pain of ['Sim','Não']) for (const layout of ['Full bed','Híbrido']) {
+      const result = recommend({ ...base, goals, level, pain, layout, mains: 'Tripa natural', crosses: 'Poliéster', mainsTension: '52 lb', crossesTension: '48 lb' })
+      assert.equal(result.length,3)
+      assert.equal(new Set(result.map(r=>r.id)).size,3)
+      assert.equal(result.filter(r=>r.isValueOption).length,1)
+      assert.ok(result.every(r=>r.costComparison.includes('Setup atual:')))
+      if (level === 'Iniciante') assert.ok(result.every(r=>r.mains.material !== 'Poliéster' && r.crosses.material !== 'Poliéster'))
+      if (pain === 'Sim') assert.ok(result.filter(r=>r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster').length <= 1)
+    }
+  })
+  it('reduzir custo compara com o setup premium, e a opção econômica usa faixa menor', () => {
+    const result = recommend({ ...base, goals: ['Reduzir o custo','Conforto'], previous: 'Tripa natural', previousBrand: 'Babolat', previousModel: 'Touch VS' })
+    const value = result.find(r=>r.isValueOption)!
+    assert.ok(value)
+    assert.match(value.costComparison,/Setup atual: faixa premium/)
+    assert.match(value.costComparison,/Faixa indicativa menor/)
+    assert.match(recommendationText(value),/Opção de custo-benefício/)
+    assert.match(recommendationText(value),/não calculamos economia em R\$/)
+  })
+  it('não promete redução quando o setup inicial já é econômico', () => {
+    const result = recommend({ ...base, goals: ['Reduzir o custo'], previous: 'Synthetic gut (nylon)', previousBrand: 'Prince', previousModel: 'Synthetic Gut with Duraflex' })
+    const value = result.find(r=>r.isValueOption)!
+    assert.equal(value.id,'nylon')
+    assert.match(value.costComparison,/não há economia demonstrada/)
+  })
+  it('usa os modelos especificados e as duas direções do híbrido na referência de custo', () => {
+    const result = recommend({ ...base, goals: ['Reduzir o custo'], layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsBrand:'Babolat', mainsModel:'Touch VS', crossesBrand:'Luxilon', crossesModel:'ALU Power', mainsTension:'52 lb', crossesTension:'50 lb' })
+    assert.match(result[0].costComparison,/Setup atual: faixa alta a premium/)
+    const full = recommend({ ...base, goals:['Reduzir o custo'], previous:'Multifilamento', previousBrand:'Tecnifibre', previousModel:'X-One Biphase' })
+    assert.match(full[0].costComparison,/Setup atual: faixa alta/)
   })
 })

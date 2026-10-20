@@ -1,9 +1,10 @@
+import { stringCostBand, compareCost, costNote } from './cost.ts'
 import { MIN_TENSION, MAX_TENSION } from './tensionRange.ts'
-import { factors, improvementFactors, launchLow, launchHigh, type Factor } from './preferences.ts'
+import { factors, improvementFactors, launchLow, launchHigh, reduceCost, type ImprovementFactor, type Factor } from './preferences.ts'
 export { factors } from './preferences.ts'
 export type Answers = {
   level: string; racket: string; pattern: string; previous: string; tension: string; goals: string[]; pain: string
-  layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number
+  layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number; previousBrand?: string; previousModel?: string; mainsBrand?: string; mainsModel?: string; crossesBrand?: string; crossesModel?: string
 }
 export type StringSpec = { brand: string; model: string; material: string; gauge: string }
 type Scores = Record<Factor, number>
@@ -15,6 +16,7 @@ export type Recommendation = Setup & {
   reason: string; preservation: string; layoutChange: string
   tensions: { mains: number; crosses: number; explanation: string }
   tensionComparison: string; caution: string
+  isValueOption: boolean; costComparison: string; costNote: string
 }
 const strings = {
   velocity: { brand: 'HEAD', model: 'Velocity MLT', material: 'Multifilamento', gauge: '1,30 mm' },
@@ -56,9 +58,9 @@ export function recommend(a: Answers): Recommendation[] {
   // Sem inventar tensões caso falte o histórico necessário.
   if (oldMains === null || oldCrosses === null) return []
   const liked = (a.liked ?? []).filter((f): f is Factor => factors.includes(f as Factor))
-  const goals = [...new Set(a.goals)].filter((f): f is Factor => improvementFactors.includes(f as Factor))
+  const goals = [...new Set(a.goals)].filter((f): f is ImprovementFactor => improvementFactors.includes(f as ImprovementFactor))
   if (!goals.length || goals.length > 2 || (goals.includes(launchLow) && goals.includes(launchHigh))) return []
-  const hasGoal = (goal: Factor) => goals.includes(goal)
+  const hasGoal = (goal: ImprovementFactor) => goals.includes(goal)
   const angleGoal = goals.find(goal => goal === launchLow || goal === launchHigh)
   const angleLiked = liked.find(factor => factor === launchLow || factor === launchHigh)
   const patternMatch = /^(\d+) × (\d+)$/.exec(a.pattern)
@@ -71,7 +73,7 @@ export function recommend(a: Answers): Recommendation[] {
   const softOnly = a.level === 'Iniciante'
   const hasPoly = (setup: Setup) => setup.mains.material === 'Poliéster' || setup.crosses.material === 'Poliéster'
   const eligible = setups.filter(s => !softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
-  const ranked = eligible.map(setup => ({ setup, score: 5 * goals.reduce((sum, goal) => sum + setup.scores[goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  const ranked = eligible.map(setup => ({ setup, score: 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Custo-benefício' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   // Com desconforto, manter pelo menos duas alternativas sem poliéster.
   const selected: Setup[] = []
   for (const { setup } of ranked) {
@@ -86,6 +88,19 @@ export function recommend(a: Answers): Recommendation[] {
     const hybrid = ranked.find(entry => entry.setup.layout === 'Híbrido')?.setup
     if (hybrid) selected[2] = hybrid
   }
+  const currentCost = currentLayout === 'Híbrido'
+    ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
+    : stringCostBand(currentMains, a.previousBrand, a.previousModel)
+  const setupCost = (setup: Setup) => (stringCostBand(setup.mains.material, setup.mains.brand, setup.mains.model) + stringCostBand(setup.crosses.material, setup.crosses.brand, setup.crosses.model)) / 2
+  const valueCandidates = ranked.filter(({ setup }) => setup.scores['Custo-benefício'] >= 4)
+  const lowerCost = valueCandidates.filter(({ setup }) => setupCost(setup) < currentCost)
+  const valueOption = (hasGoal(reduceCost) && lowerCost.length ? lowerCost : valueCandidates)[0].setup
+  // Reservar uma alternativa de custo-benefício sem remover a única opção híbrida.
+  if (!selected.some(setup => setup.id === valueOption.id)) {
+    let index = selected.length - 1
+    if (selected[index].layout === 'Híbrido' && selected.filter(s => s.layout === 'Híbrido').length === 1) index--
+    selected[index] = valueOption
+  }
   return selected.map(setup => {
     const notes = new Set<string>()
     notes.add(`Raquete considerada: ${racketContext}. A combinação de padrão e área da cabeça é uma referência aproximada de encordoamento ${spacing}; não mede o espaçamento real nem o ângulo de saída.`)
@@ -96,7 +111,7 @@ export function recommend(a: Answers): Recommendation[] {
     if (goals.length === 2) notes.add(`Objetivos combinados com o mesmo peso: ${goals.join(' e ')}. Ajustes de tensão em sentidos opostos são compensados, em vez de prometer melhorar tudo ao mesmo tempo.`)
     if (angleGoal && angleLiked && angleGoal !== angleLiked) notes.add('O ângulo que você quer preservar entra em conflito com o ângulo desejado: o ajuste é reduzido e exige confirmar sua prioridade em quadra.')
     const tensionFor = (base: number, oldMaterial: string, spec: StringSpec) => {
-      const goalDelta = (goal: Factor) => goal === launchLow || goal === 'Controle' ? 2 : goal === launchHigh || goal === 'Conforto' || goal === 'Potência' ? -2 : 0
+      const goalDelta = (goal: ImprovementFactor) => goal === launchLow || goal === 'Controle' ? 2 : goal === launchHigh || goal === 'Conforto' || goal === 'Potência' ? -2 : 0
       let delta = goals.reduce((sum, goal) => sum + goalDelta(goal), 0) / goals.length
       if (liked.includes('Controle') && hasGoal('Potência')) delta += 1
       if (liked.includes('Conforto') && hasGoal('Controle')) delta -= 1
@@ -140,6 +155,7 @@ export function recommend(a: Answers): Recommendation[] {
       crosses = tensionFor(oldCrosses, currentCrosses, setup.crosses)
     }
     if (angleGoal) notes.add(angleGoal === launchLow ? 'A regra testa maior firmeza para buscar uma saída mais baixa; é uma hipótese para comparar em quadra, não uma relação universal.' : 'A regra testa menor firmeza para buscar uma saída mais alta; é uma hipótese para comparar em quadra, não uma relação universal.')
+    else if (goals.length === 1 && hasGoal(reduceCost)) notes.add('Reduzir o custo orienta a escolha da corda; a tensão não é alterada para prometer economia. Eventuais ajustes de tensão decorrem da mudança de material e do histórico informado.')
     else notes.add(hasGoal('Controle') ? 'O ajuste busca uma resposta mais contida, preservando conforto quando ele foi marcado.' : hasGoal('Conforto') || hasGoal('Potência') ? 'O ajuste busca uma resposta mais elástica; menor tensão não substitui a escolha do material.' : 'Para efeito e durabilidade, a combinação de cordas tem prioridade sobre mudanças grandes de tensão.')
     const supported = liked.filter(f => setup.scores[f] >= 3)
     const compromises = liked.filter(f => setup.scores[f] < 3)
@@ -147,6 +163,9 @@ export function recommend(a: Answers): Recommendation[] {
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
+      isValueOption: setup.id === valueOption.id,
+      costComparison: compareCost(currentCost, setupCost(setup)),
+      costNote,
       reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${softOnly ? ' O perfil iniciante prioriza opções sem poliéster.' : hasDiscomfort ? hasPoly(setup) ? ' Esta é uma alternativa com poliéster em tensão reduzida, para avaliar com o encordoador.' : ' Esta opção prioriza materiais sem poliéster para comparar o conforto.' : ''}`,
       preservation,
       layoutChange: setup.layout === currentLayout ? `Mantém ${currentLayout}` : `Muda de ${currentLayout} para ${setup.layout}`,
@@ -160,5 +179,5 @@ export function recommendationText(r: Recommendation): string {
   const setup = r.layout === 'Full bed'
     ? `${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb em toda a raquete`
     : `Mains (verticais): ${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb\nCrosses (horizontais): ${stringName(r.crosses)} · ${r.crosses.material} · ${r.crosses.gauge} · ${r.tensions.crosses} lb`
-  return `${r.title}\n${r.layoutChange}\n${setup}\n${r.reason}\n${r.preservation}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
+  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
 }
