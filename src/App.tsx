@@ -125,11 +125,10 @@ function App() {
     catch { setCopied(false); window.alert('Não foi possível copiar. Você pode selecionar o texto da página.') }
   }
   return <div className="shell">
-    <header><a className="brand" href="/" aria-label="String EZ, início"><svg className="ball" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle cx="18" cy="18" r="17" fill="var(--primary)" /><g transform="rotate(-25 18 18)" fill="none" stroke="var(--ball-seam)" strokeWidth="2"><path d="M4 8C17 10 17 26 4 28" /><path d="M32 8C19 10 19 26 32 28" /></g></svg> string<span>ez</span><small>your strings tuned to your game.</small></a><span className="badge">SEU PRÓXIMO SET COMEÇA AQUI</span></header>
+    <header><a className="brand" href="/" aria-label="String EZ, início"><svg className="ball" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle cx="18" cy="18" r="17" fill="var(--primary)" /><g transform="rotate(-25 18 18)" fill="none" stroke="var(--ball-seam)" strokeWidth="2"><path d="M4 8C17 10 17 26 4 28" /><path d="M32 8C19 10 19 26 32 28" /></g></svg> string<span>ez</span><small>your strings tuned to your game.</small></a></header>
     <main>
       {step === -1 ? <section className="welcome">
         <div className="intro"><p className="eyebrow">MENOS DÚVIDA. MAIS JOGO.</p><h1 ref={heading} tabIndex={-1}>Seu jogo.<br />Sua corda.<br /><em>Seu próximo nível.</em></h1><p className="lead">Conte como você joga, o que gosta nas suas cordas e o que quer melhorar. Descubra três configurações com cordas, tensões e motivos para experimentar.</p><ThemePicker selected={theme} onSelect={setTheme} /><button className="primary" onClick={() => move(0)}>Encontrar minhas cordas <span>↗</span></button><p className="micro">Sua raquete + seu perfil · cerca de 3 minutos · sem cadastro</p></div>
-        <div className="features"><p><b>01 / SEU PERFIL</b>Seu equipamento e seu momento em quadra.</p><p><b>02 / SUAS PRIORIDADES</b>O que preservar e o que melhorar.</p><p><b>03 / SUAS CONFIGURAÇÕES</b>Cordas, tensões e combinações para testar.</p></div>
       </section> : result ? <section className="results">
         <p className="eyebrow">SEU PRÓXIMO ENCORDOAMENTO</p><h1 ref={heading} tabIndex={-1}>Três caminhos.<br /><em>Um jogo mais seu.</em></h1>
         <p className="lead">Configurações para discutir com seu encordoador e testar em quadra, escolhidas por regras a partir do seu perfil.</p>
@@ -165,7 +164,7 @@ function App() {
         <p className="micro">Suas respostas ficam apenas nesta sessão. Nenhum dado é enviado.</p>
       </section>}
     </main>
-    <footer><span>STRING EZ © {currentYear}</span><span>Feito para quem ama estar em quadra.</span><span>Recomendações por regras · versão inicial</span></footer>
+    <footer><span>STRING EZ © {currentYear}</span><span>Feito por João Boccoli.</span><span>Recomendações por regras · versão inicial</span></footer>
   </div>
 }
 export default App
