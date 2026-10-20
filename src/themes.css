@@ -31,7 +31,7 @@
   --cross-bg:#ffe7df; --cross:#9c3d29; --cross-border:#b74c34; --focus:#9c3d29; --frame:#80718f;
 }
 .theme-picker{max-width:680px;margin:32px auto 30px;text-align:left}
-.theme-picker-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text)}
+.theme-picker-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text)}
 .theme-picker-hint{font-size:10px;font-weight:400;color:var(--muted)}
 .theme-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
 .theme-option{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:8px 7px 13px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);transition:background-color .15s,border-color .15s,transform .15s}
@@ -45,8 +45,6 @@
 .theme-swatches i:nth-child(3){background:var(--outfit-three)}
 .theme-check{position:absolute;right:6px;top:6px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;font-size:11px;font-weight:700;background:transparent}
 .theme-option[aria-pressed=true] .theme-check{background:var(--accent);color:var(--surface)}
-.theme-status{font-size:11px;color:var(--muted);margin:7px 3px 0;line-height:1.7}
-.theme-status span{display:block;font-size:10px}
 @media(max-width:700px){.theme-picker{margin:26px 0}.theme-options{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:9px;padding:5px 3px 12px;overscroll-behavior-x:contain}.theme-option{min-width:104px;flex:0 0 104px;scroll-snap-align:start}.theme-portrait{height:112px}.theme-picker-heading{font-size:12px}.theme-picker-hint{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.theme-option{transition:none}.theme-option:hover{transform:none}}
 .welcome,.welcome .intro,.theme-picker{min-width:0}.welcome .intro{width:100%}.theme-options{min-width:0;max-width:100%}
