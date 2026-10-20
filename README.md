@@ -88,3 +88,11 @@ Baixa tensão não elimina a rigidez do poliéster nem garante ausência de dor.
 ## Lançamentos conferidos em fontes oficiais
 
 Defyer (Wilson), Fire (Tecnifibre), MUSE (Yonex), Squared (HEAD) e Axis (Diadem) estão disponíveis, totalizando 19 variantes técnicas. Os registros guardam padrão, tamanho da cabeça e URL oficial; as recomendações usam esses valores. A revisão também adicionou Wilson RF 01, completou variantes Q+ da Pro Kennex e corrigiu Pure Aero 98 para 16 × 20. Consulte [a revisão e suas fontes](docs/catalog-review.md) para escopo, especificações e limitações. Registros antigos sem fonte ainda não têm essa mesma verificação individual.
+
+## Temas por outfit
+
+A landing page oferece cinco paletas com caricaturas inspiradas nas fotos de outfits fornecidas: Alcaraz (padrão claro/verde com turquesa), Guga (amarelo/marinho), Agassi (rosa/preto), Federer (magenta/marinho) e Nadal (lilás/coral). No celular, o seletor desliza horizontalmente e mantém o tema escolhido visível. A paleta altera fundo, textos, botões, seleções, avisos, cartões, diagramas e a cor da barra do navegador, sem alterar regras ou respostas.
+
+`src/themes.ts` define as opções; `src/themes.css` centraliza as variáveis de cor; `src/ThemePicker.tsx` apresenta a seleção acessível com botões de estado `aria-pressed`. A preferência é salva apenas no navegador em `string-ez-theme`. Falha de armazenamento não impede a troca de tema, e valores inválidos retornam ao Alcaraz. “Começar de novo” reinicia as respostas e preserva o tema. As caricaturas são uma única imagem transparente gerada a partir das referências, em `src/assets/player-outfits.png`, reutilizada por CSS sem chamadas a serviços de imagem durante o uso.
+
+Validação em Chromium: cinco paletas, persistência/fallback de armazenamento, asset, fluxo híbrido até resultados, layouts 320/390/1440 e contraste ≥4,5 nas combinações principais de texto/fundo e botões (incluindo hover). A mudança de tema não interfere nos testes do motor de recomendações.
