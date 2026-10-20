@@ -20,6 +20,7 @@ type Question = { key: keyof Answers; title: string; hint: string; options?: str
 const currentYear = new Date().getFullYear()
 type StringSlot = 'previous' | 'mains' | 'crosses'
 const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
+const levelRanges: Record<string, string> = { Iniciante: 'NTRP 1.0 a 3.0', Intermediário: 'NTRP 3.5 a 4.5', Avançado: 'NTRP 5.0 a 7.0' }
 const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'Tripa natural', specifyString]
 const likesQuestion: Question = {
   key: 'liked', title: 'O que você gosta no encordoamento atual?',
@@ -58,7 +59,7 @@ function App() {
     { key: 'line', title: 'Qual é a linha da sua raquete?', hint: `Escolha a família da sua ${answers.brand}.`, options: Object.keys(rackets[answers.brand] ?? {}) },
     { key: 'racket', title: 'Qual é o modelo da sua raquete?', hint: 'Selecione o modelo indicado no aro da sua raquete.', options: (rackets[answers.brand]?.[answers.line] ?? []).map(model => model.name) },
     ...(patterns.length > 1 ? [{ key: 'pattern' as const, title: 'Qual é o padrão de cordas?', hint: 'Este modelo tem mais de um padrão no catálogo. Confira na sua raquete: verticais × horizontais.', options: patterns }] : []),
-    { key: 'level', title: 'Como é o seu jogo hoje?', hint: 'Vamos encontrar um ponto de partida para o seu momento.', options: ['Iniciante', 'Intermediário', 'Avançado'] },
+    { key: 'level', title: 'Como é o seu jogo hoje?', hint: 'Escolha o nível que mais combina com seu jogo. As faixas NTRP são uma referência aproximada para esta seleção.', options: ['Iniciante', 'Intermediário', 'Avançado'] },
     { key: 'layout', title: 'Como está montado seu encordoamento?', hint: 'Escolha a configuração que você usa hoje. Mains são as cordas verticais; crosses, as horizontais.', options: ['Full bed', 'Híbrido'] },
     ...(hybrid ? [
       ...stringQuestions('mains'),
@@ -76,7 +77,7 @@ function App() {
   ]
   const result = step === questions.length
   const q = questions[step]
-  const options = sortOptions(q?.options ?? [])
+  const options = q?.key === 'level' ? q.options ?? [] : sortOptions(q?.options ?? [])
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'
@@ -159,7 +160,7 @@ function App() {
             {isTension ? <TensionSelector label={q.title} selected={String(answers[q.key])} onSelect={choose} />
               : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{option}{(option === launchLow || option === launchHigh) && <small className="angle-option-hint">{option === launchLow ? 'Trajetória inicial mais baixa ao deixar as cordas.' : 'Trajetória inicial mais alta ao deixar as cordas.'}</small>}</span></label>)}</div>
                 : <div className={q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{options.map(option => <button type="button" className={answers[q.key] === option ? 'choice selected' : 'choice'} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
-                  {q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><small>{option === 'Full bed' ? 'Uma única corda em toda a raquete.' : 'Duas cordas, combinadas no mesmo encordoamento.'}</small></span></> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material}</small></span> : option}<span aria-hidden="true">→</span>
+                  {q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><small>{option === 'Full bed' ? 'Uma única corda em toda a raquete.' : 'Duas cordas, combinadas no mesmo encordoamento.'}</small></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material}</small></span> : option}<span aria-hidden="true">→</span>
                 </button>)}</div>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>
