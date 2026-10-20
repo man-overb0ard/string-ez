@@ -10,13 +10,13 @@ import './App.css'
 
 type Answers = RecommendationAnswers & {
   brand: string; line: string; layout: string; mains: string; crosses: string
-  mainsTension: string; crossesTension: string; liked: string[]
+  mainsTension: string; crossesTension: string; liked: string[]; painDetails: string[]
   previousBrand: string; previousModel: string; mainsBrand: string; mainsModel: string; crossesBrand: string; crossesModel: string
 }
 type Question = { key: keyof Answers; title: string; hint: string; options?: string[] }
 const currentYear = new Date().getFullYear()
 type StringSlot = 'previous' | 'mains' | 'crosses'
-const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', liked: [] }
+const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
 const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'Tripa natural', specifyString]
 const likesQuestion: Question = {
   key: 'liked', title: 'O que você gosta no encordoamento atual?',
@@ -62,20 +62,22 @@ function App() {
     ]),
     likesQuestion,
     { key: 'goals', title: 'O que você quer melhorar?', hint: 'Escolha um ou dois pontos para sua próxima partida. Os dois terão o mesmo peso nas sugestões.', options: [...improvementFactors] },
-    { key: 'pain', title: 'Sente desconforto no braço?', hint: 'Isso muda nossa prioridade na escolha das cordas.', options: ['Sim', 'Não'] },
+    { key: 'pain', title: 'Você sente algum desconforto físico ao jogar?', hint: 'Considere desconfortos durante ou após o jogo.', options: ['Sim', 'Não'] },
+    ...(answers.pain === 'Sim' ? [{ key: 'painDetails' as const, title: 'Qual desconforto você apresenta?', hint: 'Marque um ou mais relatos que se aplicam a você. Esta seleção não confirma um diagnóstico.', options: ['Cotovelo de tenista', 'Cotovelo de golfista', 'Dor no ombro', 'Dor nos punhos'] }] : []),
   ]
   const result = step === questions.length
   const q = questions[step]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
-  const isMulti = q?.key === 'liked' || isGoals
-  const multiSelection = isGoals ? answers.goals : answers.liked
+  const isPainDetails = q?.key === 'painDetails'
+  const isMulti = q?.key === 'liked' || isGoals || isPainDetails
+  const multiSelection = isGoals ? answers.goals : isPainDetails ? answers.painDetails : answers.liked
   const direction = q?.key.startsWith('mains') ? 'mains' : q?.key.startsWith('crosses') ? 'crosses' : null
   const materialFor = (slot: StringSlot) => resolveStringMaterial(answers[slot], answers[`${slot}Brand`], answers[`${slot}Model`])
   const racketSummary = racketLabel(answers.brand, answers.line, answers.racket)
   const recommendations = result ? recommend({ ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), racket: racketSummary, headSize: getHeadSize(answers.brand, answers.line, answers.racket), pattern: resolvedPattern }) : []
   const answerText = (key: keyof Answers) => {
-    if (key === 'liked' || key === 'goals') return answers[key].join(', ')
+    if (key === 'liked' || key === 'goals' || key === 'painDetails') return answers[key].join(', ')
     if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialFor(key)
     return answers[key]
   }
@@ -99,13 +101,14 @@ function App() {
       ...(key === 'brand' ? { line: '', racket: '', pattern: '' }
         : key === 'line' ? { racket: '', pattern: '' }
         : key === 'racket' ? { pattern: '' }
+        : key === 'pain' && value === 'Não' ? { painDetails: [] }
         : key === 'layout' ? { previous: '', mains: '', crosses: '', previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', tension: '', mainsTension: '', crossesTension: '' } : {}),
     })
     })
   }
   function choose(value: string) { updateAnswer(q.key, value); move(step + 1) }
   function toggleMulti(value: string) {
-    const key = isGoals ? 'goals' : 'liked'
+    const key = isGoals ? 'goals' : isPainDetails ? 'painDetails' : 'liked'
     setAnswers(current => ({ ...current, [key]: togglePreference(current[key], value, isGoals ? 2 : Infinity) }))
   }
   async function copy() {
@@ -125,7 +128,7 @@ function App() {
         <p className="racket-reference">Referência: <b>{racketSummary}</b> · {resolvedPattern}{getHeadSize(answers.brand, answers.line, answers.racket) ? ` · ${getHeadSize(answers.brand, answers.line, answers.racket)} pol²` : ''}</p>
         <div className="profile-priorities"><p><b>Preservar</b> {answers.liked.join(' · ')}</p><p><b>Melhorar</b> {answers.goals.join(' · ')}</p></div>
         <details><summary>Conferir minhas respostas</summary><dl><div><dt>Padrão de cordas</dt><dd>{resolvedPattern}</dd></div>{questions.filter(item => item.key !== 'pattern').map(item => <div key={item.key}><dt>{item.title}</dt><dd>{answerText(item.key)}</dd></div>)}</dl></details>
-        {answers.pain === 'Sim' && <p className="notice">Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões; por isso, as opções abaixo não contêm poliéster.</p>}
+        {answers.pain === 'Sim' && <p className="notice"><b>Desconfortos informados: {answers.painDetails.join(' · ')}.</b> Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões; por isso, as opções abaixo não contêm poliéster.</p>}
         <p className="notice"><b>Antes de encordoar:</b> as tensões abaixo são pontos de teste, não uma faixa validada para sua raquete. Confirme cada valor com o encordoador e com a indicação do fabricante. Os modelos de corda fazem parte de um catálogo inicial; preço e disponibilidade não são consultados em tempo real.</p>
         <div className="cards">{recommendations.map((r, i) => <RecommendationCard key={r.id} recommendation={r} index={i} />)}</div>
         {recommendations.length !== 3 && <p role="alert">Não foi possível gerar as três opções. Revise as tensões do encordoamento atual.</p>}
@@ -137,8 +140,8 @@ function App() {
         <h1 ref={heading} tabIndex={-1}>{direction && <span className={`direction-heading ${direction}`}><span aria-hidden="true">{direction === 'mains' ? '↕' : '↔'}</span> {direction === 'mains' ? 'MAINS · VERTICAIS' : 'CROSSES · HORIZONTAIS'}</span>}{q.title}</h1>
         {q.key.endsWith('Model') && <p className="racket-path">{answers[q.key.replace('Model', 'Brand') as keyof Answers]}</p>}
         {(q.key === 'line' || q.key === 'racket') && <p className="racket-path">{racketLabel(answers.brand, answers.line, '')}</p>}
-        <p className="lead" id="question-hint">{q.hint}{q.options && <span className="micro option-hint">{isMulti ? isGoals ? 'Selecione até duas opções e confirme em Continuar.' : 'Selecione um ou mais fatores e confirme em Continuar.' : 'Toque em uma opção para avançar.'}</span>}</p>
-        {isMulti && <p className="launch-angle-help">Ângulo de saída (launch angle) é a inclinação inicial da bola ao sair das cordas. Alto e baixo são alternativas: escolher um substitui o outro. A trajetória também depende da técnica, do material e da raquete.</p>}
+        <p className="lead" id="question-hint">{q.hint}{q.options && <span className="micro option-hint">{isMulti ? isGoals ? 'Selecione até duas opções e confirme em Continuar.' : isPainDetails ? 'Você pode marcar mais de uma opção. Confirme em Continuar.' : 'Selecione um ou mais fatores e confirme em Continuar.' : 'Toque em uma opção para avançar.'}</span>}</p>
+        {isMulti && !isPainDetails && <p className="launch-angle-help">Ângulo de saída (launch angle) é a inclinação inicial da bola ao sair das cordas. Alto e baixo são alternativas: escolher um substitui o outro. A trajetória também depende da técnica, do material e da raquete.</p>}
         {isGoals && <p className="selection-count" role="status">{answers.goals.length} de 2 objetivos selecionados</p>}
         <form onSubmit={event => { event.preventDefault(); if (isMulti && multiSelection.length && (!isGoals || multiSelection.length <= 2)) move(step + 1) }}>
           <fieldset aria-describedby="question-hint"><legend className="sr-only">{q.title}</legend>
