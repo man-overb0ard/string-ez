@@ -1,3 +1,4 @@
+import { availableImprovementFactors, reconcileImprovementGoals } from '../src/preferences.ts'
 import { recommendGauge, referenceGauge, knownGauges, gaugeLabel } from '../src/stringGauge.ts'
 import type { StringSpec } from '../src/recommendations.ts'
 import { recommendationStrings } from '../src/recommendationStrings.ts'
@@ -641,5 +642,26 @@ describe('calibre personalizado por modelo', () => {
     }
     assert.ok(hybridFound)
     assert.equal(JSON.stringify(recommendationSetups),before)
+  })
+})
+
+
+describe('amarração entre preservar e melhorar', () => {
+  it('oculta fatores preservados, incluindo a correspondência entre preço e reduzir custo', () => {
+    const available = availableImprovementFactors(['Pocketing', 'Snapback', 'Preço'])
+    assert.ok(!available.includes('Pocketing'))
+    assert.ok(!available.includes('Snapback'))
+    assert.ok(!available.includes('Reduzir o custo'))
+    assert.ok(available.includes('Controle') && available.includes('Spin'))
+    assert.deepEqual(availableImprovementFactors(['Nada em especial']), improvementFactors)
+    assert.deepEqual(availableImprovementFactors(['Cor da corda', 'Formato (Redondo, Hexagonal, etc.)']), improvementFactors)
+  })
+  it('limpa apenas melhorias conflitantes ao rever preferências sem restaurá-las automaticamente', () => {
+    const goals = ['Pocketing', 'Spin']
+    const remaining = reconcileImprovementGoals(goals, ['Pocketing'])
+    assert.deepEqual(remaining, ['Spin'])
+    assert.deepEqual(reconcileImprovementGoals(remaining, []), ['Spin'])
+    assert.deepEqual(goals, ['Pocketing', 'Spin'])
+    assert.deepEqual(reconcileImprovementGoals(['Reduzir o custo'], ['Preço']), [])
   })
 })

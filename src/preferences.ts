@@ -13,3 +13,11 @@ export function togglePreference(current: string[], value: string, limit = Infin
 export function canSelectPreference(current: string[], value: string, limit: number): boolean {
   return value === nothingLiked || current.includes(value) || current.length < limit
 }
+
+export function availableImprovementFactors(liked: readonly string[]): ImprovementFactor[] {
+  return improvementFactors.filter(goal => !liked.includes(goal === reduceCost ? 'Preço' : goal))
+}
+export function reconcileImprovementGoals(goals: readonly string[], liked: readonly string[]): string[] {
+  const available = availableImprovementFactors(liked)
+  return goals.filter(goal => available.includes(goal as ImprovementFactor))
+}

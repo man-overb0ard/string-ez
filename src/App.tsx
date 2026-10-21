@@ -9,7 +9,7 @@ import NtrpGuide from './NtrpGuide'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
 import { stringCatalog, specifyString, findString, resolveStringMaterial, materialLabel } from './stringCatalog'
-import { improvementFactors, nothingLiked, togglePreference, canSelectPreference } from './preferences'
+import { availableImprovementFactors, reconcileImprovementGoals, nothingLiked, togglePreference, canSelectPreference } from './preferences'
 import ThemePicker from './ThemePicker'
 import { allThemes, readSavedTheme, themeStorageKey } from './themes'
 import { sortOptions } from './sortOptions'
@@ -80,7 +80,7 @@ function App() {
       { key: 'tension' as const, title: 'E a tensão atual?', hint: 'Selecione a tensão do seu encordoamento atual, em libras (lb).' },
     ]),
     likesQuestion,
-    { key: 'goals', title: 'O que você quer melhorar?', hint: 'Escolha um ou dois pontos para sua próxima partida. Os dois terão o mesmo peso nas sugestões.', options: [...improvementFactors] },
+    { key: 'goals', title: 'O que você quer melhorar?', hint: 'Escolha um ou dois pontos para sua próxima partida. Os fatores que você quer preservar não aparecem aqui. Os dois objetivos terão o mesmo peso nas sugestões.', options: availableImprovementFactors(answers.liked) },
     { key: 'pain', title: 'Você sente algum desconforto físico ao jogar?', hint: 'Considere desconfortos durante ou após o jogo.', options: ['Sim', 'Não'] },
     ...(answers.pain === 'Sim' ? [{ key: 'painDetails' as const, title: 'Qual desconforto você apresenta?', hint: 'Marque um ou mais relatos que se aplicam a você. Esta seleção não confirma um diagnóstico.', options: ['Cotovelo de tenista', 'Cotovelo de golfista', 'Dor no ombro', 'Dor nos punhos'] }] : []),
   ]
@@ -135,7 +135,7 @@ function App() {
     const key = isGoals ? 'goals' : isPainDetails ? 'painDetails' : 'liked'
     setAnswers(current => {
       const selection = togglePreference(current[key], value, multiLimit)
-      return { ...current, [key]: selection, ...(key === 'liked' ? { preferredColor: selection.includes(colorPreference) ? current.preferredColor : undefined, preferredShape: selection.includes(shapePreference) ? current.preferredShape : undefined } : {}) }
+      return { ...current, [key]: selection, ...(key === 'liked' ? { goals: reconcileImprovementGoals(current.goals, selection), preferredColor: selection.includes(colorPreference) ? current.preferredColor : undefined, preferredShape: selection.includes(shapePreference) ? current.preferredShape : undefined } : {}) }
     })
   }
   async function copy() {
