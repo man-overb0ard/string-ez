@@ -1,10 +1,11 @@
+import { colorPreference, shapePreference, stringColors, stringShapes, stringAppearance, appearanceDescription } from './stringAppearance.ts'
 import { stringCostBand, compareCost, costNote } from './cost.ts'
 import { MIN_TENSION, MAX_TENSION } from './tensionRange.ts'
 import { factors, improvementFactors, launchLow, launchHigh, reduceCost, type ImprovementFactor, type Factor } from './preferences.ts'
 export { factors } from './preferences.ts'
 export type Answers = {
   level: string; racket: string; pattern: string; previous: string; tension: string; goals: string[]; pain: string
-  layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number; previousBrand?: string; previousModel?: string; mainsBrand?: string; mainsModel?: string; crossesBrand?: string; crossesModel?: string
+  preferredColor?: string; preferredShape?: string; layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number; previousBrand?: string; previousModel?: string; mainsBrand?: string; mainsModel?: string; crossesBrand?: string; crossesModel?: string
 }
 export type StringSpec = { brand: string; model: string; material: string; gauge: string }
 type Scores = Record<Factor, number>
@@ -16,7 +17,7 @@ export type Recommendation = Setup & {
   reason: string; preservation: string; layoutChange: string
   tensions: { mains: number; crosses: number; explanation: string }
   tensionComparison: string; caution: string
-  isValueOption: boolean; costComparison: string; costNote: string
+  appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
 }
 const strings = {
   velocity: { brand: 'HEAD', model: 'Velocity MLT', material: 'Multifilamento', gauge: '1,30 mm' },
@@ -57,7 +58,13 @@ export function recommend(a: Answers): Recommendation[] {
   const oldCrosses = parseTension(currentLayout === 'Híbrido' ? a.crossesTension : a.tension)
   // Sem inventar tensões caso falte o histórico necessário.
   if (oldMains === null || oldCrosses === null) return []
-  const liked = [...new Set(a.liked ?? [])].filter((f): f is Factor => factors.includes(f as Factor))
+  const preferences = [...new Set(a.liked ?? [])].filter(f => factors.includes(f as Factor) || f === colorPreference || f === shapePreference)
+  if (preferences.length > 3) return []
+  const color = preferences.includes(colorPreference) ? a.preferredColor : undefined
+  const shape = preferences.includes(shapePreference) ? a.preferredShape : undefined
+  if (preferences.includes(colorPreference) && (!color || !Object.hasOwn(stringColors, color))) return []
+  if (preferences.includes(shapePreference) && (!shape || !stringShapes.includes(shape as typeof stringShapes[number]))) return []
+  const liked = preferences.filter((f): f is Factor => factors.includes(f as Factor))
   if (liked.length > 3) return []
   const goals = [...new Set(a.goals)].filter((f): f is ImprovementFactor => improvementFactors.includes(f as ImprovementFactor))
   if (!goals.length || goals.length > 2 || (goals.includes(launchLow) && goals.includes(launchHigh))) return []
@@ -73,8 +80,14 @@ export function recommend(a: Answers): Recommendation[] {
   const hasDiscomfort = a.pain === 'Sim'
   const softOnly = a.level === 'Iniciante'
   const hasPoly = (setup: Setup) => setup.mains.material === 'Poliéster' || setup.crosses.material === 'Poliéster'
-  const eligible = setups.filter(s => !softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
-  const ranked = eligible.map(setup => ({ setup, score: 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Custo-benefício' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  const appearanceScore = (s: Setup) => {
+    const main = stringAppearance(s.mains), cross = stringAppearance(s.crosses)
+    return (color ? (main.colors.includes(color) ? 5 : 0) + (cross.colors.includes(color) ? 2 : 0) : 0) + (shape ? (main.shape === shape ? 5 : 0) + (cross.shape === shape ? 2 : 0) : 0)
+  }
+  const lynx = { brand: 'HEAD', model: 'Lynx Tour', material: 'Poliéster', gauge: '1,25 mm' }
+  const candidates: Setup[] = shape === 'Hexagonal' || color === 'Laranja' || color === 'Cinza' ? [...setups, { id: 'lynx-tour', title: 'Controle com perfil hexagonal', layout: 'Full bed', mains: lynx, crosses: lynx, scores: scores(2,5,2,5,4,3,2,3,4), benefit: 'Copoliéster hexagonal para explorar controle e efeito com swing completo.', tradeoff: 'O formato não garante mais spin; continua sendo poliéster e exige acompanhar conforto e perda de resposta.' }] : setups
+  const eligible = candidates.filter(s => !softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
+  const ranked = eligible.map(setup => ({ setup, score: appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Custo-benefício' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   // Com desconforto, manter pelo menos duas alternativas sem poliéster.
   const selected: Setup[] = []
   for (const { setup } of ranked) {
@@ -160,10 +173,11 @@ export function recommend(a: Answers): Recommendation[] {
     else notes.add(hasGoal('Controle') ? 'O ajuste busca uma resposta mais contida, preservando conforto quando ele foi marcado.' : hasGoal('Conforto') || hasGoal('Potência') ? 'O ajuste busca uma resposta mais elástica; menor tensão não substitui a escolha do material.' : 'Para efeito e durabilidade, a combinação de cordas tem prioridade sobre mudanças grandes de tensão.')
     const supported = liked.filter(f => setup.scores[f] >= 3)
     const compromises = liked.filter(f => setup.scores[f] < 3)
-    const preservation = liked.length === 0 ? 'Você não marcou um ponto a preservar; a prioridade é o objetivo escolhido.' : `${supported.length ? `Busca preservar: ${supported.join(', ')}.` : 'Os pontos que você gosta podem mudar com esta configuração.'}${compromises.length ? ` Atenção à possível perda de ${compromises.join(', ')}.` : ''}`
+    const preservation = liked.length === 0 ? preferences.length ? 'As preferências de cor e formato estão detalhadas abaixo.' : 'Você não marcou um ponto a preservar; a prioridade é o objetivo escolhido.' : `${supported.length ? `Busca preservar: ${supported.join(', ')}.` : 'Os pontos que você gosta podem mudar com esta configuração.'}${compromises.length ? ` Atenção à possível perda de ${compromises.join(', ')}.` : ''}`
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
+      appearanceNote: appearanceDescription(setup.mains, setup.crosses, setup.layout === 'Híbrido', color, shape),
       isValueOption: setup.id === valueOption.id,
       costComparison: compareCost(currentCost, setupCost(setup)),
       costNote,
@@ -180,5 +194,5 @@ export function recommendationText(r: Recommendation): string {
   const setup = r.layout === 'Full bed'
     ? `${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb em toda a raquete`
     : `Mains (verticais): ${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb\nCrosses (horizontais): ${stringName(r.crosses)} · ${r.crosses.material} · ${r.crosses.gauge} · ${r.tensions.crosses} lb`
-  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
+  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
 }

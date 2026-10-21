@@ -389,3 +389,34 @@ describe('ordenação de opções', () => {
     assert.deepEqual(sortOptions(['Hyper-G Soft','Confidential','Hyper-G']), ['Confidential','Hyper-G','Hyper-G Soft'])
   })
 })
+
+describe('preferências de cor e formato', () => {
+  const color = 'Cor da corda', shape = 'Formato (Redondo, Hexagonal, etc.)'
+  it('exige detalhes válidos e conta cor e formato no limite de três', () => {
+    assert.deepEqual(recommend({ ...base, liked: [color] }), [])
+    assert.deepEqual(recommend({ ...base, liked: [shape], preferredShape: 'Inventado' }), [])
+    assert.deepEqual(recommend({ ...base, liked: [color], preferredColor: 'Inventada' }), [])
+    assert.deepEqual(recommend({ ...base, liked: [color, shape, 'Controle', 'Conforto'], preferredColor: 'Preta', preferredShape: 'Redondo' }), [])
+    assert.equal(recommend({ ...base, liked: [color, shape, 'Controle'], preferredColor: 'Preta', preferredShape: 'Redondo' }).length, 3)
+  })
+  it('favorece verde/quadrado, inclui hexagonal e explica as concessões de custo', () => {
+    const green = recommend({ ...base, liked: [color, shape], preferredColor: 'Verde', preferredShape: 'Quadrado' })
+    assert.ok(green.some(r => r.mains.model.includes('Hyper-G')))
+    assert.ok(green.find(r => r.isValueOption)?.appearanceNote.includes('Não preserva a cor verde'))
+    const hex = recommend({ ...base, liked: [shape], preferredShape: 'Hexagonal' })
+    assert.ok(hex.some(r => r.mains.model === 'Lynx Tour'))
+    assert.ok(hex.every(r => recommendationText(r).includes(r.appearanceNote)))
+  })
+  it('ignora detalhes desmarcados e mantém os filtros de iniciante e desconforto', () => {
+    assert.deepEqual(recommend({ ...base, preferredColor: 'Verde', preferredShape: 'Hexagonal' }), recommend(base))
+    for (const level of ['Iniciante', 'Intermediário']) for (const pain of ['Sim', 'Não']) {
+      const result = recommend({ ...base, level, pain, liked: [color, shape], preferredColor: 'Verde', preferredShape: 'Hexagonal' })
+      assert.equal(result.length, 3)
+      assert.equal(new Set(result.map(r => r.id)).size, 3)
+      assert.equal(result.filter(r => r.isValueOption).length, 1)
+      const polys = result.filter(r => [r.mains, r.crosses].some(s => s.material === 'Poliéster'))
+      if (level === 'Iniciante') assert.equal(polys.length, 0)
+      if (pain === 'Sim') assert.ok(polys.length <= 1)
+    }
+  })
+})

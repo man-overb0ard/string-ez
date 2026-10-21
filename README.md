@@ -114,3 +114,9 @@ O tema Djokovic usa azul-celeste e cobalto do outfit de referência, com coral n
 O tema Sinner combina mostarda, oliva e preto da foto de referência. A caricatura em `src/assets/sinner-mustard.png` usa um arquivo individual transparente para evitar trechos de outros tenistas no recorte. A seleção persiste no navegador e participa da aplicação antecipada do tema.
 
 Os diagramas de encordoamento usam cores fixas para facilitar a comparação: full bed em azul, híbrido com verticais azuis e horizontais laranjas, sobre fundo claro. Na seleção, legendas com setas identificam as duas direções. As cores são ilustrativas e independentes do tema e da cor real das cordas.
+
+### Preferências de cor e formato
+
+“Cor da corda” e “Formato (Redondo, Hexagonal, etc.)” contam dentro do limite de três pontos a preservar. Cada seleção abre um seletor na mesma etapa; é obrigatório informar o detalhe para continuar. Desmarcar limpa o detalhe, e voltar mantém as escolhas confirmadas. As preferências aparecem no resumo e no texto copiado.
+
+`src/stringAppearance.ts` mantém variantes de referência de cor base e seção (redonda, quadrada ou hexagonal) para os produtos recomendáveis. O motor soma até 7 pontos por preferência: 5 pela correspondência nas verticais e 2 nas horizontais. São preferências de ordenação, sem filtrar os requisitos de iniciante, desconforto ou custo-benefício. HEAD Lynx Tour entra no conjunto de candidatos quando há preferência hexagonal, cinza ou laranja. Cada resultado informa as variantes sugeridas por direção e explicita quando não preserva cor ou formato. As cores agrupam tons próximos; estoque e variantes por calibre precisam ser confirmados com o encordoador. Cor não altera a regra de tensão nem recebe promessa de desempenho; formato não garante spin.

@@ -9,6 +9,7 @@ import { improvementFactors, launchLow, launchHigh, nothingLiked, togglePreferen
 import ThemePicker from './ThemePicker'
 import { themes, readSavedTheme, themeStorageKey } from './themes'
 import { sortOptions } from './sortOptions'
+import { colorPreference, shapePreference, stringColors, stringShapes } from './stringAppearance'
 import './App.css'
 
 type Answers = RecommendationAnswers & {
@@ -25,7 +26,7 @@ const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'T
 const likesQuestion: Question = {
   key: 'liked', title: 'O que você gosta no encordoamento atual?',
   hint: 'Escolha até três pontos que você gostaria de preservar. Na próxima etapa, você escolhe até dois pontos a melhorar.',
-  options: [...factors, nothingLiked],
+  options: [...factors, colorPreference, shapePreference, nothingLiked],
 }
 
 function App() {
@@ -81,6 +82,7 @@ function App() {
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'
+  const appearanceComplete = (!answers.liked.includes(colorPreference) || !!answers.preferredColor) && (!answers.liked.includes(shapePreference) || !!answers.preferredShape)
   const isPainDetails = q?.key === 'painDetails'
   const isMulti = q?.key === 'liked' || isGoals || isPainDetails
   const multiLimit = isGoals ? 2 : isLiked ? 3 : Infinity
@@ -90,7 +92,8 @@ function App() {
   const racketSummary = racketLabel(answers.brand, answers.line, answers.racket)
   const recommendations = result ? recommend({ ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), racket: racketSummary, headSize: getHeadSize(answers.brand, answers.line, answers.racket), pattern: resolvedPattern }) : []
   const answerText = (key: keyof Answers) => {
-    if (key === 'liked' || key === 'goals' || key === 'painDetails') return answers[key].join(', ')
+    if (key === 'liked') return answers.liked.map(value => value === colorPreference ? `${value}: ${answers.preferredColor}` : value === shapePreference ? `${value}: ${answers.preferredShape}` : value).join(', ')
+    if (key === 'goals' || key === 'painDetails') return answers[key].join(', ')
     if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialFor(key)
     return answers[key]
   }
@@ -122,7 +125,10 @@ function App() {
   function choose(value: string) { updateAnswer(q.key, value); move(step + 1) }
   function toggleMulti(value: string) {
     const key = isGoals ? 'goals' : isPainDetails ? 'painDetails' : 'liked'
-    setAnswers(current => ({ ...current, [key]: togglePreference(current[key], value, multiLimit) }))
+    setAnswers(current => {
+      const selection = togglePreference(current[key], value, multiLimit)
+      return { ...current, [key]: selection, ...(key === 'liked' ? { preferredColor: selection.includes(colorPreference) ? current.preferredColor : undefined, preferredShape: selection.includes(shapePreference) ? current.preferredShape : undefined } : {}) }
+    })
   }
   async function copy() {
     const text = `Meu perfil String EZ\nRaquete: ${racketSummary} · ${resolvedPattern}\n${questions.map(item => `${item.title} ${answerText(item.key)}`).join('\n')}\n\n${recommendations.map((r, i) => `${i + 1}. ${recommendationText(r)}`).join('\n\n')}\n\nSugestões por regras, não validação da faixa de tensão do fabricante.`
@@ -138,7 +144,7 @@ function App() {
         <p className="eyebrow">SEU PRÓXIMO ENCORDOAMENTO</p><h1 ref={heading} tabIndex={-1}>Três caminhos.<br /><em>Um jogo mais seu.</em></h1>
         <p className="lead">Configurações para discutir com seu encordoador e testar em quadra, escolhidas por regras a partir do seu perfil.</p>
         <p className="racket-reference">Referência: <b>{racketSummary}</b> · {resolvedPattern}{getHeadSize(answers.brand, answers.line, answers.racket) ? ` · ${getHeadSize(answers.brand, answers.line, answers.racket)} pol²` : ''}</p>
-        <div className="profile-priorities"><p><b>Preservar</b> {answers.liked.join(' · ')}</p><p><b>Melhorar</b> {answers.goals.join(' · ')}</p></div>
+        <div className="profile-priorities"><p><b>Preservar</b> {answerText('liked')}</p><p><b>Melhorar</b> {answers.goals.join(' · ')}</p></div>
         <details><summary>Conferir minhas respostas</summary><dl><div><dt>Padrão de cordas</dt><dd>{resolvedPattern}</dd></div>{questions.filter(item => item.key !== 'pattern').map(item => <div key={item.key}><dt>{item.title}</dt><dd>{answerText(item.key)}</dd></div>)}</dl></details>
         {answers.pain === 'Sim' && <p className="notice"><b>Desconfortos informados: {answers.painDetails.join(' · ')}.</b> Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões. As opções podem incluir poliéster em tensão reduzida; isso não garante conforto nem ausência de dor.</p>}
         <p className="notice"><b>Antes de encordoar:</b> as tensões abaixo são pontos de teste, não uma faixa validada para sua raquete. Confirme cada valor com o encordoador e com a indicação do fabricante. Os modelos de corda fazem parte de um catálogo inicial; preço e disponibilidade não são consultados em tempo real.</p>
@@ -155,7 +161,7 @@ function App() {
         <p className="lead" id="question-hint">{q.hint}{q.options && <span className="micro option-hint">{isMulti ? isGoals ? 'Selecione até duas opções e confirme em Continuar.' : isPainDetails ? 'Você pode marcar mais de uma opção. Confirme em Continuar.' : 'Selecione até três fatores e confirme em Continuar.' : 'Toque em uma opção para avançar.'}</span>}</p>
         {isMulti && !isPainDetails && <p className="launch-angle-help">Ângulo de saída (launch angle) é a inclinação inicial da bola ao sair das cordas. Alto e baixo são alternativas: escolher um substitui o outro. A trajetória também depende da técnica, do material e da raquete.</p>}
         {(isGoals || isLiked) && <p className="selection-count" role="status">{multiSelection.length} de {multiLimit} {isGoals ? 'objetivos' : 'pontos a preservar'} selecionados</p>}
-        <form onSubmit={event => { event.preventDefault(); if (isMulti && multiSelection.length && (multiSelection.length <= multiLimit)) move(step + 1) }}>
+        <form onSubmit={event => { event.preventDefault(); if (isMulti && multiSelection.length && (multiSelection.length <= multiLimit) && (!isLiked || appearanceComplete)) move(step + 1) }}>
           <fieldset aria-describedby="question-hint"><legend className="sr-only">{q.title}</legend>
             {isTension ? <TensionSelector key={q.key} label={q.title} selected={String(answers[q.key])} onSelect={choose} />
               : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{option}{(option === launchLow || option === launchHigh) && <small className="angle-option-hint">{option === launchLow ? 'Trajetória inicial mais baixa ao deixar as cordas.' : 'Trajetória inicial mais alta ao deixar as cordas.'}</small>}</span></label>)}</div>
@@ -164,7 +170,9 @@ function App() {
                 </button>)}</div>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>
-          <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!multiSelection.length} type="submit">Continuar →</button>}</div>
+          {isLiked && answers.liked.includes(colorPreference) && <fieldset className="appearance-picker"><legend>Qual cor base você quer manter?</legend><p className="micro">No híbrido, vamos priorizar essa cor nas verticais. A disponibilidade pode variar por calibre e loja.</p><div className="color-options">{sortOptions(Object.keys(stringColors)).map(color => <button type="button" key={color} aria-pressed={answers.preferredColor === color} onClick={() => setAnswers(current => ({ ...current, preferredColor: color }))}><i aria-hidden="true" style={{ background: stringColors[color as keyof typeof stringColors] }} />{color}</button>)}</div></fieldset>}
+          {isLiked && answers.liked.includes(shapePreference) && <fieldset className="appearance-picker"><legend>Qual formato você quer manter?</legend><p className="micro">Escolha a seção da corda, não o padrão da raquete. No híbrido, priorizamos as verticais.</p><div className="color-options">{sortOptions(stringShapes).map(shape => <button type="button" key={shape} aria-pressed={answers.preferredShape === shape} onClick={() => setAnswers(current => ({ ...current, preferredShape: shape }))}>{shape}</button>)}</div></fieldset>}
+          <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!multiSelection.length || (isLiked && !appearanceComplete)} type="submit">Continuar →</button>}</div>
         </form>
         <p className="micro">Suas respostas ficam apenas nesta sessão. Nenhum dado é enviado.</p>
       </section>}
