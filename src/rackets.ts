@@ -119,10 +119,6 @@ const volklModernModels = () => [
   catalogModel('V10 320 g', '16 × 19', 98),
 ]
 const additionalFamilies: Record<string, Record<string, RacketModel[]>> = {
-  Mizuno: {
-    F: [catalogModel('F97', '16 × 19', 97), catalogModel('F100', '16 × 19', 100)],
-    'F Tour': [catalogModel('285', '16 × 19', 100), catalogModel('300', '16 × 19', 100)],
-  },
   Volkl: {
     Vostra: volklModernModels(),
     'V-Cell': volklModernModels().filter(model => !model.name.startsWith('V9')).map(model => ({ ...model, name: model.name.replace(/^V/, '') })),
