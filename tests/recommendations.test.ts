@@ -538,3 +538,39 @@ describe('frequência semanal', () => {
       }
   })
 })
+
+describe('trajetória predominante da bola', () => {
+  const styles=['Mais reta','Com arco e topspin','Mais alta e profunda']
+  it('usa o estilo como ajuste complementar e diferencia controle, rotação e profundidade', () => {
+    const results=styles.map(shotStyle=>recommend({...base,goals:['Conforto','Controle'],shotStyle}))
+    assert.deepEqual(results.map(r=>r[0].id),['xone','hyperg','xone'])
+    assert.match(results[0][0].shotStyleNote,/controle de profundidade/)
+    assert.match(results[1][0].shotStyleNote,/spin, snapback/)
+    assert.match(results[2][0].shotStyleNote,/também pode ter muito topspin/)
+    assert.ok(results.every(rs=>rs.every(r=>recommendationText(r).includes(r.shotStyleNote))))
+    assert.deepEqual(recommend({...base,shotStyle:''}),[])
+    assert.deepEqual(recommend({...base,shotStyle:'Inválido'}),[])
+  })
+  it('não muda a tensão de um mesmo setup só pela trajetória', () => {
+    const original=recommend(base)
+    for(const shotStyle of styles)for(const r of recommend({...base,shotStyle})){
+      const same=original.find(other=>other.id===r.id)
+      if(same)assert.deepEqual(r.tensions,same.tensions)
+    }
+  })
+  it('combina trajetórias e frequência sem perder posições e filtros de material', () => {
+    for(const shotStyle of styles)for(const weeklyHours of ['Até 2 horas','Mais de 10 horas'])
+      for(const level of ['Iniciante','Intermediário','Avançado'])for(const pain of ['Sim','Não'])
+        for(const previous of ['Poliéster','Tripa natural'])for(const goal of improvementFactors){
+          const result=recommend({...base,shotStyle,weeklyHours,level,pain,previous,goals:[goal]})
+          assert.equal(result.length,3)
+          assert.equal(new Set(result.map(r=>r.id)).size,3)
+          assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
+          assert.ok(result.every(r=>r.shotStyleNote&&r.frequencyNote))
+          if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'&&[r.mains,r.crosses].every(s=>s.material!=='Poliéster')))
+          else assert.notEqual(result[0].layout,result[1].layout)
+          if(pain==='Sim')assert.ok(result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster')).length<=1)
+          if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
+        }
+  })
+})

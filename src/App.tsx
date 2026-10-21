@@ -3,6 +3,8 @@ import { factors, recommend, recommendationText, type Answers as RecommendationA
 import { rackets, getPatterns, racketLabel, getHeadSize } from './rackets'
 import RacketBrandLogo from './RacketBrandLogo'
 import StringBedDiagram from './StringBedDiagram'
+import ShotStyleOption from './ShotStyleOption'
+import { shotStyleOptions } from './shotStyle'
 import NtrpGuide from './NtrpGuide'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
@@ -24,7 +26,7 @@ type Answers = RecommendationAnswers & {
 type Question = { key: keyof Answers; title: string; hint: string; options?: string[] }
 const currentYear = new Date().getFullYear()
 type StringSlot = 'previous' | 'mains' | 'crosses'
-const initial: Answers = { weeklyHours: '', previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
+const initial: Answers = { weeklyHours: '', shotStyle: '', previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
 const levelRanges: Record<string, string> = { Iniciante: 'NTRP 1.0 a 3.0', Intermediário: 'NTRP 3.5 a 4.5', Avançado: 'NTRP 5.0 a 7.0' }
 const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'Tripa natural', specifyString]
 const likesQuestion: Question = {
@@ -66,6 +68,7 @@ function App() {
     ...(patterns.length > 1 ? [{ key: 'pattern' as const, title: 'Qual é o padrão de cordas?', hint: 'Este modelo tem mais de um padrão no catálogo. Confira na sua raquete: verticais × horizontais.', options: patterns }] : []),
     { key: 'level', title: 'Como é o seu jogo hoje?', hint: 'Escolha o nível que mais combina com seu jogo. As faixas NTRP são uma referência aproximada para esta seleção.', options: ['Iniciante', 'Intermediário', 'Avançado'] },
     { key: 'weeklyHours', title: 'Quantas horas por semana você costuma jogar?', hint: 'Pense na sua rotina habitual de treinos e partidas. Isso ajuda a equilibrar manutenção de tensão, desgaste e preço das trocas.', options: [...weeklyHoursOptions] },
+    { key: 'shotStyle', title: 'Como costuma ser a trajetória da sua bola?', hint: 'Pense na sua batida mais frequente do fundo da quadra, mesmo que varie durante o jogo.', options: [...shotStyleOptions] },
     { key: 'layout', title: 'Como está montado seu encordoamento?', hint: 'Escolha a configuração que você usa hoje. Mains são as cordas verticais; crosses, as horizontais.', options: ['Full bed', 'Híbrido'] },
     ...(hybrid ? [
       ...stringQuestions('mains'),
@@ -83,7 +86,7 @@ function App() {
   ]
   const result = step === questions.length
   const q = questions[step]
-  const options = (q?.key === 'level' || q?.key === 'weeklyHours') ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
+  const options = (q?.key === 'level' || q?.key === 'weeklyHours' || q?.key === 'shotStyle') ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'
@@ -169,9 +172,10 @@ function App() {
           <fieldset aria-describedby="question-hint"><legend className="sr-only">{q.title}</legend>
             {isTension ? <TensionSelector key={q.key} label={q.title} selected={String(answers[q.key])} onSelect={choose} />
               : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{option}{(option === 'Snapback' || option === 'Pocketing') && <small className="snapback-option-hint">{option === 'Snapback' ? 'Retorno das cordas à posição após o impacto.' : 'Sensação de a bola afundar e ser abraçada pelas cordas no impacto.'}</small>}</span></label>)}</div>
-                : <div className={q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{options.map(option => <button type="button" className={`choice${answers[q.key] === option ? ' selected' : ''}${option === specifyString ? ' specify-string-choice' : ''}`} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
-                  {q.key === 'brand' ? <RacketBrandLogo brand={option} /> : q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><span className="string-color-legend"><span><i className="string-swatch mains-swatch" aria-hidden="true" />{option === 'Full bed' ? '↕ ↔ Mesma corda' : '↕ Verticais · corda A'}</span>{option === 'Híbrido' && <span><i className="string-swatch crosses-swatch" aria-hidden="true" />↔ Horizontais · corda B</span>}</span></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{materialLabel(findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material ?? '')}</small></span> : materialLabel(option)}<span aria-hidden="true">→</span>
+                : <div className={q.key === 'shotStyle' ? 'choices shot-style-choices' : q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{options.map(option => <button type="button" className={`choice${answers[q.key] === option ? ' selected' : ''}${option === specifyString ? ' specify-string-choice' : ''}`} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
+                  {q.key === 'shotStyle' ? <ShotStyleOption label={option} /> : q.key === 'brand' ? <RacketBrandLogo brand={option} /> : q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><span className="string-color-legend"><span><i className="string-swatch mains-swatch" aria-hidden="true" />{option === 'Full bed' ? '↕ ↔ Mesma corda' : '↕ Verticais · corda A'}</span>{option === 'Híbrido' && <span><i className="string-swatch crosses-swatch" aria-hidden="true" />↔ Horizontais · corda B</span>}</span></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{materialLabel(findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material ?? '')}</small></span> : materialLabel(option)}<span aria-hidden="true">→</span>
                 </button>)}</div>}
+            {q.key === 'shotStyle' && <p className="micro">Altura e rotação são coisas diferentes: uma bola alta também pode ter bastante topspin.</p>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>
           {q.key === 'level' && <NtrpGuide />}
