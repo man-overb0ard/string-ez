@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { factors, recommend, recommendationText, type Answers } from '../src/recommendations.ts'
 import { stringCatalog, specifyString, findString, resolveStringMaterial } from '../src/stringCatalog.ts'
-import { improvementFactors, launchLow, launchHigh, nothingLiked, togglePreference, canSelectPreference } from '../src/preferences.ts'
+import { improvementFactors, nothingLiked, togglePreference, canSelectPreference } from '../src/preferences.ts'
 import { rackets, getHeadSize, getPatterns } from '../src/rackets.ts'
 const base: Answers = { level: 'Intermediário', racket: 'VCORE 98', pattern: '16 × 19', previous: 'Poliéster', tension: '50 lb', goals: ['Controle'], pain: 'Não', layout: 'Full bed', liked: [] }
 
@@ -11,7 +11,7 @@ describe('configurações recomendadas', () => {
   it('gera três configurações únicas, com produtos e tensões inteiras, em todos os perfis válidos', () => {
     for (const level of ['Iniciante', 'Intermediário', 'Avançado'])
       for (const pain of ['Sim', 'Não'])
-        for (const goal of ['Conforto', 'Controle', 'Potência', 'Efeito (spin)', 'Durabilidade'])
+        for (const goal of ['Conforto', 'Controle', 'Potência', 'Spin', 'Durabilidade'])
           for (const liked of [[], ...factors.map(f => [f])])
             for (const layout of ['Full bed', 'Híbrido']) {
               const result = recommend({ ...base, level, pain, goals: [goal], liked, layout, mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '60 lb', crossesTension: '30 lb' })
@@ -147,7 +147,7 @@ describe('novas raquetes e faixa de tensão ampliada', () => {
 })
 
 
-describe('dois objetivos e ângulo de saída', () => {
+describe('dois objetivos, snapback e contexto da raquete', () => {
   it('combina dois objetivos com o mesmo peso e sem depender da ordem de seleção', () => {
     const first = recommend({ ...base, goals: ['Controle', 'Potência'] })
     const second = recommend({ ...base, goals: ['Potência', 'Controle'] })
@@ -164,7 +164,6 @@ describe('dois objetivos e ângulo de saída', () => {
   it('cada combinação válida de objetivos produz três opções e respeita os filtros do perfil', () => {
     for (let i = 0; i < improvementFactors.length; i++) for (let j = i; j < improvementFactors.length; j++) {
       const goals = [...new Set([improvementFactors[i], improvementFactors[j]])]
-      if (goals.includes(launchLow) && goals.includes(launchHigh)) continue
       for (const pain of ['Sim', 'Não']) {
         const results = recommend({ ...base, goals, pain, headSize: 98 })
         assert.equal(results.length, 3)
@@ -179,54 +178,38 @@ describe('dois objetivos e ângulo de saída', () => {
       }
     }
   })
-  it('o ângulo desejado muda a tensão em sentidos diferentes para o mesmo produto', () => {
-    const low = recommend({ ...base, headSize: 100, goals: [launchLow] })
-    const high = recommend({ ...base, headSize: 100, goals: [launchHigh] })
-    const shared = low.find(a => high.some(b => b.id === a.id))!
-    assert.ok(shared)
-    const counterpart = high.find(b => b.id === shared.id)!
-    assert.ok(shared.tensions.mains > counterpart.tensions.mains)
-    assert.match(shared.tensions.explanation, /hipótese/)
-    assert.match(counterpart.tensions.explanation, /não pode ser previsto só pela tensão/)
+  it('distingue snapback de spin na ordenação sem ajustar tensão só pelo snapback', () => {
+    const snapback = recommend({ ...base, goals: ['Snapback'] })
+    const spin = recommend({ ...base, goals: ['Spin'] })
+    assert.equal(snapback[0].id, 'ptp')
+    assert.equal(spin[0].id, 'hyperg')
+    assert.equal(snapback[0].tensions.mains, 50)
+    assert.match(snapback[0].tensions.explanation, /não medições de atrito/)
+    assert.match(snapback[0].reason, /não garantia de mais spin/)
+    assert.match(snapback.find(r => r.isValueOption)!.reason, /concessão/)
   })
-  it('usa geometria e padrão da raquete, sem inventar uma medição de ângulo', () => {
+  it('considera snapback a preservar e mantém contexto real da raquete', () => {
+    assert.equal(recommend({ ...base, liked: ['Snapback'] })[0].id, 'ptp')
+    assert.equal(recommend({ ...base, liked: ['Spin'] })[0].id, 'hyperg')
     assert.equal(getHeadSize('Yonex', 'VCORE', '98'), 98)
-    assert.equal(getHeadSize('Yonex', 'EZONE', '100'), 100)
-    assert.equal(getHeadSize('Tecnifibre', 'T-Fight', '305'), undefined)
-    const small = recommend({ ...base, headSize: 98, goals: [launchLow] })
-    const large = recommend({ ...base, headSize: 100, goals: [launchLow] })
-    const shared = small.find(r => large.some(other => other.id === r.id))!
-    assert.ok(shared)
-    assert.equal(large.find(r => r.id === shared.id)!.tensions.mains, shared.tensions.mains + 1)
-    const dense = recommend({ ...base, headSize: 98, pattern: '18 × 20', goals: [launchHigh] })
-    const open = recommend({ ...base, headSize: 98, pattern: '16 × 19', goals: [launchHigh] })
-    assert.equal(dense[0].id, open[0].id)
-    assert.equal(dense[0].tensions.mains, open[0].tensions.mains - 1)
-    assert.match(dense[0].tensions.explanation, /18 × 20.*98 pol²/)
-    assert.match(dense[0].tensions.explanation, /não mede.*ângulo/)
-    const unknown = recommend({ ...base, goals: [launchHigh] })
-    assert.match(unknown[0].tensions.explanation, /tamanho da cabeça não validado/)
+    const dense = recommend({ ...base, headSize: 98, pattern: '18 × 20', goals: ['Conforto'] })
+    const open = recommend({ ...base, headSize: 98, pattern: '16 × 19', goals: ['Conforto'] })
+    const shared = dense.find(r => open.some(other => other.id === r.id))!
+    assert.equal(shared.tensions.mains, open.find(r => r.id === shared.id)!.tensions.mains - 1)
+    assert.match(shared.tensions.explanation, /18 × 20.*98 pol²/)
   })
-  it('preservar o ângulo atual reduz o ajuste e explicita prioridades incompatíveis', () => {
-    const plain = recommend({ ...base, goals: ['Controle'] })
-    const preserved = recommend({ ...base, goals: ['Controle'], liked: [launchHigh] })
-    const poly = preserved.find(r => r.id === 'hyperg')!
-    assert.ok(poly)
-    assert.ok(poly.tensions.mains < plain.find(r => r.id === 'hyperg')!.tensions.mains)
-    assert.match(poly.preservation, /Ângulo de saída alto/)
-    const conflict = recommend({ ...base, goals: [launchLow], liked: [launchHigh] })
-    assert.match(conflict[0].tensions.explanation, /conflito/)
+  it('usa Preço e Spin e retira os ângulos dos dois questionários', () => {
+    assert.ok(factors.includes('Preço') && factors.includes('Spin') && factors.includes('Snapback'))
+    assert.ok(improvementFactors.includes('Snapback') && improvementFactors.includes('Spin'))
+    assert.ok(![...factors,...improvementFactors].some(f => f.includes('Ângulo') || f === 'Custo-benefício' || f === 'Efeito (spin)'))
+    assert.ok(recommend({ ...base, liked: ['Preço'] }).some(r => r.isValueOption))
   })
-  it('limita a dois objetivos e troca baixo por alto sem permitir contradição', () => {
-    assert.deepEqual(togglePreference(['Controle'], launchLow, 2), ['Controle', launchLow])
-    assert.deepEqual(togglePreference(['Controle', launchLow], launchHigh, 2), ['Controle', launchHigh])
-    assert.deepEqual(togglePreference(['Controle', launchLow], 'Potência', 2), ['Controle', launchLow])
-    assert.equal(canSelectPreference(['Controle', launchLow], launchHigh, 2), true)
-    assert.equal(canSelectPreference(['Controle', launchLow], 'Potência', 2), false)
-    assert.deepEqual(togglePreference([launchLow], launchHigh), [launchHigh])
-    assert.deepEqual(togglePreference([launchLow], nothingLiked), [nothingLiked])
-    assert.deepEqual(togglePreference([nothingLiked], launchHigh), [launchHigh])
-    for (const goals of [[], ['Controle','Conforto','Potência'], [launchLow,launchHigh]]) assert.deepEqual(recommend({ ...base, goals }), [])
+  it('limita a dois objetivos sem substituir uma escolha quando está no máximo', () => {
+    assert.deepEqual(togglePreference(['Controle', 'Spin'], 'Snapback', 2), ['Controle', 'Spin'])
+    assert.equal(canSelectPreference(['Controle', 'Spin'], 'Snapback', 2), false)
+    assert.deepEqual(togglePreference(['Snapback'], nothingLiked), [nothingLiked])
+    assert.deepEqual(togglePreference([nothingLiked], 'Snapback'), ['Snapback'])
+    for (const goals of [[], ['Controle','Conforto','Potência'], ['Ângulo de saída baixo']]) assert.deepEqual(recommend({ ...base, goals }), [])
   })
 })
 
@@ -243,7 +226,7 @@ describe('famílias Pro Kennex', () => {
 
 describe('poliéster com desconforto físico', () => {
   it('permite uma alternativa com poliéster em tensão reduzida e duas opções sem poliéster', () => {
-    for (const goals of [['Controle'], ['Efeito (spin)'], ['Controle', 'Efeito (spin)']]) {
+    for (const goals of [['Controle'], ['Spin'], ['Controle', 'Spin']]) {
       const results = recommend({ ...base, pain: 'Sim', tension: '54 lb', goals })
       const polys = results.filter(r => r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster')
       assert.equal(polys.length, 1)
@@ -267,14 +250,14 @@ describe('poliéster com desconforto físico', () => {
     assert.match(hybrid.tensionComparison, /Crosses: 40 → 36 lb/)
   })
   it('mantém a exclusão para iniciantes e não força poliéster quando a prioridade é conforto', () => {
-    for (const a of [{ ...base, pain: 'Sim', goals: ['Conforto'] }, { ...base, pain: 'Sim', level: 'Iniciante', goals: ['Efeito (spin)'] }]) {
+    for (const a of [{ ...base, pain: 'Sim', goals: ['Conforto'] }, { ...base, pain: 'Sim', level: 'Iniciante', goals: ['Spin'] }]) {
       const results = recommend(a)
       assert.equal(results.length, 3)
       assert.ok(results.every(r => r.mains.material !== 'Poliéster' && r.crosses.material !== 'Poliéster'))
     }
   })
   it('respeita o limite inferior quando a tensão atual já é baixa', () => {
-    const results = recommend({ ...base, pain: 'Sim', tension: '30 lb', goals: ['Efeito (spin)'] })
+    const results = recommend({ ...base, pain: 'Sim', tension: '30 lb', goals: ['Spin'] })
     const poly = results.find(r => r.mains.material === 'Poliéster')!
     assert.ok(poly)
     assert.equal(poly.tensions.mains, 30)
@@ -311,7 +294,7 @@ describe('linhas conferidas nas fichas oficiais', () => {
     assert.equal(getHeadSize('Tecnifibre', 'Fire', '260 OS'), 110)
     assert.equal(getHeadSize('Head', 'Squared', 'Squared'), 100)
     assert.equal(getHeadSize('Diadem', 'Axis', 'Team'), 100)
-    const results = recommend({ ...base, racket: 'Yonex · MUSE · 107', pattern: getPatterns('Yonex', 'MUSE', '107')[0], headSize: getHeadSize('Yonex', 'MUSE', '107'), goals: [launchLow] })
+    const results = recommend({ ...base, racket: 'Yonex · MUSE · 107', pattern: getPatterns('Yonex', 'MUSE', '107')[0], headSize: getHeadSize('Yonex', 'MUSE', '107'), goals: ['Controle'] })
     assert.equal(results.length, 3)
     assert.match(results[0].tensions.explanation, /MUSE.*16 × 18.*107 pol²/)
   })
@@ -371,8 +354,8 @@ describe('limite de pontos a preservar', () => {
     assert.equal(canSelectPreference(['Conforto','Controle','Durabilidade'], nothingLiked, 3), true)
     assert.deepEqual(togglePreference(['Conforto','Controle','Durabilidade'], nothingLiked, 3), [nothingLiked])
   })
-  it('mantém exclusão entre ângulos e valida o limite no motor', () => {
-    assert.deepEqual(togglePreference(['Conforto','Controle',launchLow], launchHigh, 3), ['Conforto','Controle',launchHigh])
+  it('valida o limite no motor incluindo snapback', () => {
+    assert.deepEqual(togglePreference(['Conforto','Controle','Snapback'], 'Spin', 3), ['Conforto','Controle','Snapback'])
     assert.equal(recommend({ ...base, liked: ['Conforto','Controle','Durabilidade'] }).length, 3)
     assert.deepEqual(recommend({ ...base, liked: ['Conforto','Controle','Durabilidade','Potência'] }), [])
   })
@@ -417,6 +400,29 @@ describe('preferências de cor e formato', () => {
       const polys = result.filter(r => [r.mains, r.crosses].some(s => s.material === 'Poliéster'))
       if (level === 'Iniciante') assert.equal(polys.length, 0)
       if (pain === 'Sim') assert.ok(polys.length <= 1)
+    }
+  })
+})
+
+describe('pocketing', () => {
+  it('participa dos dois questionários e favorece combinações elásticas com explicação', () => {
+    assert.ok(factors.includes('Pocketing') && improvementFactors.includes('Pocketing'))
+    const result = recommend({ ...base, goals: ['Pocketing'] })
+    assert.ok(['gut', 'xone'].includes(result[0].id))
+    assert.match(result[0].reason, /maior pocketing/)
+    assert.match(result[0].tensions.explanation, /não é uma medição|Não é uma medição/)
+    assert.match(recommendationText(result[0]), /Pocketing/)
+    assert.equal(recommend({ ...base, liked: ['Pocketing'], goals: ['Controle'] }).length, 3)
+  })
+  it('combina pocketing e snapback sem perder limites de perfil ou custo-benefício', () => {
+    for (const level of ['Iniciante','Intermediário']) for (const pain of ['Sim','Não']) {
+      const result = recommend({ ...base, level, pain, goals: ['Pocketing','Snapback'], liked: ['Preço','Spin','Pocketing'] })
+      assert.equal(result.length, 3)
+      assert.equal(result.filter(r=>r.isValueOption).length, 1)
+      assert.ok(result.every(r=>/pocketing/i.test(r.reason) && /snapback/i.test(r.reason)))
+      const polys = result.filter(r=>r.mains.material==='Poliéster'||r.crosses.material==='Poliéster')
+      if (level==='Iniciante') assert.equal(polys.length,0)
+      if (pain==='Sim') assert.ok(polys.length<=1)
     }
   })
 })
