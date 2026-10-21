@@ -6,7 +6,7 @@ const nylon = (model: string): CatalogString => ({ model, material: 'Synthetic g
 const gut = (model: string): CatalogString => ({ model, material: 'Tripa natural' })
 // Catálogo inicial de identificação, sem classificação de vendas/estoque no Brasil.
 export const stringCatalog: Record<string, CatalogString[]> = {
-  Solinco: [poly('Mach-10'), poly('Hyper-G'), poly('Hyper-G Soft'), poly('Confidential'), poly('Tour Bite'), poly('Tour Bite Soft'), poly('Outlast'), multi('Vanquish')],
+  Solinco: [poly('Mach-10'), poly('Hyper-G'), poly('Hyper-G Soft'), poly('Confidential'), poly('Confidential Soft'), poly('Tour Bite'), poly('Tour Bite Soft'), poly('Outlast'), multi('Vanquish')],
   Yonex: [poly('POLYTOUR PRO'), poly('POLYTOUR REV'), poly('POLYTOUR STRIKE'), poly('POLYTOUR FIRE'), multi('REXIS SPEED'), multi('REXIS COMFORT')],
   Babolat: [poly('RPM Blast'), poly('RPM Rough'), poly('RPM Team'), poly('RPM Power'), multi('Xcel'), multi('Addiction'), nylon('Synthetic Gut'), gut('Touch VS')],
   Tecnifibre: [multi('X-One Biphase'), multi('NRG2'), multi('Multifeel'), multi('TGV'), poly('Razor Code'), poly('Razor Soft'), poly('Ice Code'), poly('Black Code')],
