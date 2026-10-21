@@ -333,8 +333,10 @@ describe('custo-benefício obrigatório e comparação de custo', () => {
   it('não promete redução quando o setup inicial já é econômico', () => {
     const result = recommend({ ...base, goals: ['Reduzir o custo'], previous: 'Synthetic gut (nylon)', previousBrand: 'Prince', previousModel: 'Synthetic Gut with Duraflex' })
     const value = result.find(r=>r.isValueOption)!
-    assert.equal(value.id,'nylon')
-    assert.match(value.costComparison,/não há economia demonstrada/)
+    assert.equal(result[0].id,'nylon')
+    assert.match(result[0].costComparison,/não há economia demonstrada/)
+    assert.equal(value.id,'velocity')
+    assert.match(value.costComparison,/Faixa indicativa maior/)
   })
   it('usa os modelos especificados e as duas direções do híbrido na referência de custo', () => {
     const result = recommend({ ...base, goals: ['Reduzir o custo'], layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsBrand:'Babolat', mainsModel:'Touch VS', crossesBrand:'Luxilon', crossesModel:'ALU Power', mainsTension:'52 lb', crossesTension:'50 lb' })
@@ -455,5 +457,49 @@ describe('tripa natural somente para quem já usa', () => {
     assert.ok(hybrid.every(r=>!hasGut(r)))
     const full = recommend({ ...base, mains:'Tripa natural', crosses:'Tripa natural', goals:['Pocketing','Snapback'] })
     assert.ok(full.every(r=>!hasGut(r)))
+  })
+})
+
+describe('ordem das três recomendações', () => {
+  it('prioriza a pontuação na primeira e escolhe a montagem oposta na segunda', () => {
+    assert.deepEqual(recommend(base).map(r=>r.id), ['hyperg','poly-multi','nylon'])
+    const hybridFirst = recommend({ ...base, previous:'Tripa natural', goals:['Spin','Snapback'] })
+    assert.equal(hybridFirst[0].id,'gut-poly')
+    assert.equal(hybridFirst[1].id,'hyperg')
+    assert.equal(hybridFirst[2].isValueOption,true)
+    const valueFirst = recommend({ ...base, goals:['Reduzir o custo'] })
+    assert.equal(valueFirst[0].id,'nylon')
+    assert.equal(valueFirst[1].layout,'Híbrido')
+    assert.equal(valueFirst[2].id,'velocity')
+    assert.equal(valueFirst[2].isValueOption,true)
+  })
+  it('mantém as posições, unicidade e filtros em todas as combinações de objetivos e perfis', () => {
+    for (let i=0;i<improvementFactors.length;i++) for (let j=i;j<improvementFactors.length;j++)
+      for (const level of ['Iniciante','Intermediário','Avançado']) for (const pain of ['Sim','Não'])
+        for (const previous of ['Poliéster','Tripa natural']) {
+          const result=recommend({ ...base, goals:[...new Set([improvementFactors[i],improvementFactors[j]])],level,pain,previous })
+          assert.equal(result.length,3)
+          assert.equal(new Set(result.map(r=>r.id)).size,3)
+          if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'))
+          else assert.notEqual(result[0].layout,result[1].layout)
+          assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
+          assert.ok(result[2].scores.Preço>=4)
+          const polys=result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster'))
+          if(level==='Iniciante')assert.equal(polys.length,0)
+          if(pain==='Sim')assert.ok(polys.length<=1)
+          if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
+        }
+  })
+  it('não favorece a primeira opção por montagem ou material atuais', () => {
+    const profiles: Answers[] = [
+      {...base,previous:'Poliéster'},
+      {...base,previous:'Multifilamento'},
+      {...base,layout:'Híbrido',mains:'Poliéster',crosses:'Multifilamento',mainsTension:'50 lb',crossesTension:'50 lb'},
+    ]
+    for(const profile of profiles)assert.equal(recommend(profile)[0].id,'hyperg')
+    const pain=recommend({...base,pain:'Sim'})
+    assert.notEqual(pain[0].layout,pain[1].layout)
+    assert.ok(pain[0].mains.material==='Poliéster'||pain[0].crosses.material==='Poliéster')
+    assert.ok([pain[1].mains,pain[1].crosses,pain[2].mains,pain[2].crosses].every(s=>s.material!=='Poliéster'))
   })
 })

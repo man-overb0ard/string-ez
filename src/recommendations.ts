@@ -87,36 +87,26 @@ export function recommend(a: Answers): Recommendation[] {
   const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
   const eligible = candidates.filter(s =>
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
-    (!softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
+    (!softOnly || (s.layout === 'Full bed' && s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
   )
-  const ranked = eligible.map(setup => ({ setup, score: appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
-  // Com desconforto, manter pelo menos duas alternativas sem poliéster.
-  const selected: Setup[] = []
-  for (const { setup } of ranked) {
-    if (hasDiscomfort && hasPoly(setup) && selected.some(hasPoly)) continue
-    selected.push(setup)
-    if (selected.length === 3) break
-  }
-  // Uma alternativa híbrida ajuda a explorar combinações quando se busca controle/spin
-  // ou preservar conforto ao mudar para uma resposta mais firme.
-  const exploreHybrid = !softOnly && !hasDiscomfort && currentLayout === 'Full bed' && (hasGoal('Controle') || hasGoal('Spin') || hasGoal('Snapback') || (liked.includes('Controle') && (hasGoal('Conforto') || hasGoal('Potência'))))
-  if (exploreHybrid && !selected.some(s => s.layout === 'Híbrido')) {
-    const hybrid = ranked.find(entry => entry.setup.layout === 'Híbrido')?.setup
-    if (hybrid) selected[2] = hybrid
-  }
+  const ranked = eligible.map(setup => ({ setup, score: appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   const currentCost = currentLayout === 'Híbrido'
     ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
     : stringCostBand(currentMains, a.previousBrand, a.previousModel)
   const setupCost = (setup: Setup) => (stringCostBand(setup.mains.material, setup.mains.brand, setup.mains.model) + stringCostBand(setup.crosses.material, setup.crosses.brand, setup.crosses.model)) / 2
-  const valueCandidates = ranked.filter(({ setup }) => setup.scores['Preço'] >= 4)
+  // A primeira posição é sempre o topo da ordenação, sem reserva de modalidade ou preço.
+  const first = ranked[0].setup
+  // Iniciantes ficam em full bed; nos demais perfis, a segunda usa a modalidade oposta.
+  const second = softOnly ? undefined : ranked.find(({ setup }) => setup.layout !== first.layout &&
+    (!hasDiscomfort || !hasPoly(first) || !hasPoly(setup)))!.setup
+  const valueCandidates = ranked.filter(({ setup }) => setup.scores.Preço >= 4 &&
+    setup.id !== first.id && setup.id !== second?.id &&
+    (!hasDiscomfort || !hasPoly(setup) || (!hasPoly(first) && (!second || !hasPoly(second)))))
   const lowerCost = valueCandidates.filter(({ setup }) => setupCost(setup) < currentCost)
   const valueOption = (hasGoal(reduceCost) && lowerCost.length ? lowerCost : valueCandidates)[0].setup
-  // Reservar uma alternativa de custo-benefício sem remover a única opção híbrida.
-  if (!selected.some(setup => setup.id === valueOption.id)) {
-    let index = selected.length - 1
-    if (selected[index].layout === 'Híbrido' && selected.filter(s => s.layout === 'Híbrido').length === 1) index--
-    selected[index] = valueOption
-  }
+  // Reserva o custo-benefício antes de escolher a segunda opção do iniciante, para não repetir.
+  const alternate = second ?? ranked.find(({ setup }) => setup.id !== first.id && setup.id !== valueOption.id)!.setup
+  const selected = [first, alternate, valueOption]
   return selected.map(setup => {
     const notes = new Set<string>()
     notes.add(`Raquete considerada: ${racketContext}. A combinação de padrão e área da cabeça é uma referência aproximada de encordoamento ${spacing}; não mede o espaçamento real nem o ângulo de saída.`)
