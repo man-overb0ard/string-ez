@@ -1,3 +1,4 @@
+import { recommendationStrings, type StringProfile } from './recommendationStrings.ts'
 import { shotStyleProfile } from './shotStyle.ts'
 import { weeklyPlayProfile } from './weeklyPlay.ts'
 import { colorPreference, shapePreference, stringColors, stringShapes, stringAppearance, appearanceDescription } from './stringAppearance.ts'
@@ -21,30 +22,31 @@ export type Recommendation = Setup & {
   tensionComparison: string; caution: string
   shotStyleNote: string; frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
 }
-const strings = {
-  velocity: { brand: 'HEAD', model: 'Velocity MLT', material: 'Multifilamento', gauge: '1,30 mm' },
-  xone: { brand: 'Tecnifibre', model: 'X-One Biphase', material: 'Multifilamento', gauge: '1,30 mm' },
-  nylon: { brand: 'Prince', model: 'Synthetic Gut with Duraflex', material: 'Synthetic gut (nylon)', gauge: '1,30 mm' },
-  gut: { brand: 'Babolat', model: 'Touch VS', material: 'Tripa natural', gauge: '1,30 mm' },
-  ptp: { brand: 'Yonex', model: 'POLYTOUR PRO', material: 'Poliéster', gauge: '1,25 mm' },
-  hyperg: { brand: 'Solinco', model: 'Hyper-G', material: 'Poliéster', gauge: '1,30 mm' },
-  hypergSoft: { brand: 'Solinco', model: 'Hyper-G Soft', material: 'Poliéster', gauge: '1,25 mm' },
-} satisfies Record<string, StringSpec>
-function scores(comfort: number, control: number, power: number, spin: number, durability: number, cost: number, retention: number, snapback: number, pocketing: number): Scores {
-  return { Conforto: comfort, Controle: control, Potência: power, 'Spin': spin, Durabilidade: durability, 'Preço': cost, 'Manutenção de tensão': retention, Snapback: snapback, Pocketing: pocketing }
+// Todo modelo do catálogo participa como full bed. Híbridos usam cruzamentos
+// selecionados por material, evitando o produto cartesiano de combinações sem propósito.
+function fullBed(profile: StringProfile): Setup {
+  const poly = profile.material === 'Poliéster'
+  const strengths = factors.filter(f => f !== 'Preço' && profile.scores[f] >= 4).join(', ').toLowerCase()
+  return { id: profile.id, title: `${profile.brand} ${profile.model}`, layout: 'Full bed', mains: profile, crosses: profile, scores: profile.scores,
+    benefit: `Neste perfil qualitativo, os pontos fortes são ${strengths || 'equilíbrio entre os fatores'}. ` + (poly ? 'Copoliéster para comparar controle, rotação e resposta no swing completo, conforme o perfil deste modelo.' : 'Uma configuração uniforme para explorar a resposta e a elasticidade deste modelo, conforme suas prioridades.'),
+    tradeoff: poly ? 'Continua sendo poliéster: acompanhe conforto e perda de resposta e troque mesmo sem romper quando necessário.' : profile.material === 'Tripa natural' ? 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.' : 'Pode se desgastar ou romper mais cedo com golpes rápidos e muito efeito; confirme calibre e custo local.' }
 }
-// Classificações qualitativas para regras do protótipo, não medições de laboratório.
-const setups: Setup[] = [
-  { id: 'velocity', title: 'Equilíbrio com conforto', layout: 'Full bed', mains: strings.velocity, crosses: strings.velocity, scores: scores(4,3,3,2,3,4,3,2,4), benefit: 'O multifilamento é uma alternativa mais elástica ao poliéster para buscar conforto sem ir direto à tripa natural.', tradeoff: 'Pode desfiar e romper mais cedo com golpes rápidos e muito efeito.', },
-  { id: 'xone', title: 'Resposta mais viva', layout: 'Full bed', mains: strings.xone, crosses: strings.xone, scores: scores(5,3,5,2,2,2,3,2,5), benefit: 'Uma opção elástica para facilitar profundidade e priorizar uma sensação mais macia.', tradeoff: 'Custa mais que um nylon básico e pode exigir adaptação para controlar a profundidade.', },
-  { id: 'nylon', title: 'Teste com custo contido', layout: 'Full bed', mains: strings.nylon, crosses: strings.nylon, scores: scores(3,3,3,2,3,5,3,2,3), benefit: 'O nylon oferece um ponto de partida equilibrado e acessível para comparar sensações na quadra.', tradeoff: 'Não entrega o mesmo potencial de retorno das cordas de um poliéster e também perde tensão com o uso.', },
-  { id: 'gut', title: 'Conforto e resposta premium', layout: 'Full bed', mains: strings.gut, crosses: strings.gut, scores: scores(5,3,5,3,2,1,5,4,5), benefit: 'A tripa natural combina elasticidade e manutenção de tensão para quem prioriza conforto e resposta.', tradeoff: 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.', },
-  { id: 'ptp', title: 'Controle no swing completo', layout: 'Full bed', mains: strings.ptp, crosses: strings.ptp, scores: scores(2,5,2,4,4,3,2,5,2), benefit: 'O copoliéster pode ajudar jogadores que aceleram o swing a controlar a resposta do encordoamento.', tradeoff: 'Mais firme que multifilamento; precisa ser trocado quando perder resposta, mesmo sem romper.', },
-  { id: 'hyperg', title: 'Controle com foco no efeito', layout: 'Full bed', mains: strings.hyperg, crosses: strings.hyperg, scores: scores(2,5,2,5,4,3,2,4,2), benefit: 'Poliéster perfilado para explorar controle e efeito junto com a técnica e a velocidade do swing.', tradeoff: 'A resposta firme e o calibre maior podem reduzir conforto e potência acessível.', },
-  { id: 'hyperg-soft', title: 'Efeito com tensão reduzida', layout: 'Full bed', mains: strings.hypergSoft, crosses: strings.hypergSoft, scores: scores(3,4,2,5,3,3,2,4,3), benefit: 'Uma alternativa de copoliéster para explorar efeito e controle. A versão Soft continua sendo poliéster e não garante conforto.', tradeoff: 'A tensão reduzida pode mudar a trajetória e o controle. Continua mais firme que muitas opções de multifilamento e exige acompanhar a perda de resposta.', },
-  { id: 'gut-poly', title: 'Potência e controle em dupla', layout: 'Híbrido', mains: strings.gut, crosses: strings.ptp, scores: scores(4,4,4,4,3,1,4,5,4), benefit: 'Tripa natural nas verticais e poliéster nas horizontais combinam uma resposta elástica com maior firmeza do que a tripa em full bed.', tradeoff: 'Custo alto; o poliéster pode cortar a tripa e perder resposta antes de as verticais romperem.', },
-  { id: 'poly-multi', title: 'Uma ponte para o híbrido', layout: 'Híbrido', mains: strings.ptp, crosses: strings.velocity, scores: scores(3,4,3,4,3,3,2,3,3), benefit: 'Poliéster nas verticais mantém uma resposta orientada a controle; multifilamento nas horizontais oferece uma combinação diferente de um full bed de poliéster.', tradeoff: 'Continua contendo poliéster e não garante conforto. As horizontais podem se desgastar mais rápido.', },
-  { id: 'multi-nylon', title: 'Híbrido sem poliéster', layout: 'Híbrido', mains: strings.xone, crosses: strings.nylon, scores: scores(4,3,4,2,2,3,3,2,4), benefit: 'Multifilamento nas verticais e nylon nas horizontais permitem explorar um híbrido sem adicionar poliéster.', tradeoff: 'É mais trabalhoso que um full bed e não garante mais durabilidade ou efeito; a vantagem precisa ser confirmada em quadra.', },
+function hybrid(main: StringProfile, cross: StringProfile): Setup {
+  const hasPoly = main.material === 'Poliéster' || cross.material === 'Poliéster'
+  return { id: `${main.id}--${cross.id}`, title: `${main.model} + ${cross.model}`, layout: 'Híbrido', mains: main, crosses: cross,
+    // Verticais têm maior peso como aproximação editorial. A interação entre cordas
+    // não é medida: a média não promete o desempenho real da combinação.
+    scores: Object.fromEntries(factors.map(f => [f, f === 'Preço' ? Math.min(main.scores[f], cross.scores[f]) : Math.round((main.scores[f] * 0.65 + cross.scores[f] * 0.35) * 100) / 100])) as Scores,
+    benefit: `${main.brand} ${main.model} nas verticais e ${cross.brand} ${cross.model} nas horizontais para comparar uma resposta diferente do full bed.`,
+    tradeoff: hasPoly ? 'Contém poliéster e não garante conforto. A interação pode alterar atrito e desgaste; as duas cordas podem perder resposta em ritmos diferentes.' : 'O híbrido exige acompanhar desgaste e resposta das duas cordas e não garante vantagem sobre um full bed.' }
+}
+const crossModels = new Set(['HEAD Velocity MLT', 'Tecnifibre Multifeel', 'Prince Synthetic Gut with Duraflex', 'Volkl Classic Synthetic Gut', 'Yonex POLYTOUR PRO', 'MSV Co-Focus', 'ReString Sync', 'Toroline Enso Pro'])
+const crossProfiles = recommendationStrings.filter(s => crossModels.has(`${s.brand} ${s.model}`))
+export const recommendationSetups: Setup[] = [
+  ...recommendationStrings.map(fullBed),
+  ...recommendationStrings.filter(s => s.material !== 'Synthetic gut (nylon)').flatMap(main => crossProfiles.filter(cross =>
+    cross.id !== main.id && (main.material === 'Poliéster' ? cross.material !== 'Poliéster' : main.material === 'Tripa natural' || cross.material !== main.material)
+  ).map(cross => hybrid(main, cross))),
 ]
 export function stringName(spec: StringSpec): string { return `${spec.brand} ${spec.model}` }
 function parseTension(value: string | undefined): number | null {
@@ -88,8 +90,7 @@ export function recommend(a: Answers): Recommendation[] {
     const main = stringAppearance(s.mains), cross = stringAppearance(s.crosses)
     return (color ? (main.colors.includes(color) ? 5 : 0) + (cross.colors.includes(color) ? 2 : 0) : 0) + (shape ? (main.shape === shape ? 5 : 0) + (cross.shape === shape ? 2 : 0) : 0)
   }
-  const lynx = { brand: 'HEAD', model: 'Lynx Tour', material: 'Poliéster', gauge: '1,25 mm' }
-  const candidates: Setup[] = shape === 'Hexagonal' || color === 'Laranja' || color === 'Cinza' ? [...setups, { id: 'lynx-tour', title: 'Controle com perfil hexagonal', layout: 'Full bed', mains: lynx, crosses: lynx, scores: scores(2,5,2,5,4,3,2,4,2), benefit: 'Copoliéster hexagonal para explorar controle e efeito com swing completo.', tradeoff: 'O formato não garante mais spin; continua sendo poliéster e exige acompanhar conforto e perda de resposta.' }] : setups
+  const candidates = recommendationSetups
   const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
   const eligible = candidates.filter(s =>
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
@@ -108,8 +109,10 @@ export function recommend(a: Answers): Recommendation[] {
   const valueCandidates = ranked.filter(({ setup }) => setup.scores.Preço >= 4 &&
     setup.id !== first.id && setup.id !== second?.id &&
     (!hasDiscomfort || !hasPoly(setup) || (!hasPoly(first) && (!second || !hasPoly(second)))))
-  const lowerCost = valueCandidates.filter(({ setup }) => setupCost(setup) < currentCost)
-  const valueOption = (hasGoal(reduceCost) && lowerCost.length ? lowerCost : valueCandidates)[0].setup
+  const differentMains = valueCandidates.filter(({ setup }) => setup.mains !== first.mains && setup.mains !== second?.mains)
+  const diverseValueCandidates = differentMains.length ? differentMains : valueCandidates
+  const lowerCost = diverseValueCandidates.filter(({ setup }) => setupCost(setup) < currentCost)
+  const valueOption = (hasGoal(reduceCost) && lowerCost.length ? lowerCost : diverseValueCandidates)[0].setup
   // Reserva o custo-benefício antes de escolher a segunda opção do iniciante, para não repetir.
   const alternate = second ?? ranked.find(({ setup }) => setup.id !== first.id && setup.id !== valueOption.id)!.setup
   const selected = [first, alternate, valueOption]

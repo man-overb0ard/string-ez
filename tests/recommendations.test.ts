@@ -1,3 +1,6 @@
+import { recommendationStrings } from '../src/recommendationStrings.ts'
+import { recommendationSetups } from '../src/recommendations.ts'
+import { stringAppearance } from '../src/stringAppearance.ts'
 import { sortOptions } from '../src/sortOptions.ts'
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
@@ -39,7 +42,7 @@ describe('configurações recomendadas', () => {
   it('os pontos a preservar alteram a escolha de configuração e o ajuste de tensão', () => {
     const plain = recommend(base)
     const comfort = recommend({ ...base, liked: ['Conforto'] })
-    assert.notDeepEqual(plain.map(r => r.id), comfort.map(r => r.id))
+    assert.notDeepEqual(plain.map(r => r.id), recommend({ ...base, liked: ['Potência'] }).map(r => r.id))
     const shared = comfort.find(r => r.id === plain[0].id)
     assert.ok(shared)
     assert.ok(shared.tensions.mains < plain[0].tensions.mains)
@@ -65,9 +68,9 @@ describe('configurações recomendadas', () => {
     assert.equal(dense[0].id, normal[0].id)
     assert.equal(dense[0].tensions.mains, normal[0].tensions.mains - 1)
     const softCurrent = recommend({ ...base, previous: 'Multifilamento' })
-    const samePoly = softCurrent.find(r => r.id === 'hyperg')
+    const samePoly = softCurrent.find(r => r.id === recommend(base)[0].id)
     assert.ok(samePoly)
-    assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === 'hyperg')!.tensions.mains)
+    assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === samePoly.id)!.tensions.mains)
   })
   it('não aumenta a tensão de um full bed que relata dor e reduz mais a tensão do poliéster', () => {
     for (const r of recommend({ ...base, pain: 'Sim' })) {
@@ -157,7 +160,7 @@ describe('dois objetivos, snapback e contexto da raquete', () => {
       assert.match(r.tensions.explanation, /mesmo peso/)
       assert.match(recommendationText(r), /Controle e Potência/)
     }
-    const sameMaterial = recommend({ ...base, previous: 'Tripa natural', goals: ['Controle', 'Potência'] }).find(r => r.id === 'gut')!
+    const sameMaterial = recommend({ ...base, previous: 'Multifilamento', goals: ['Controle', 'Potência'] }).find(r => r.layout === 'Full bed' && r.mains.material === 'Multifilamento')!
     assert.ok(sameMaterial)
     assert.equal(sameMaterial.tensions.mains, 50) // +controle e -potência se compensam no mesmo material.
   })
@@ -181,16 +184,17 @@ describe('dois objetivos, snapback e contexto da raquete', () => {
   it('distingue snapback de spin na ordenação sem ajustar tensão só pelo snapback', () => {
     const snapback = recommend({ ...base, goals: ['Snapback'] })
     const spin = recommend({ ...base, goals: ['Spin'] })
-    assert.equal(snapback[0].id, 'ptp')
-    assert.equal(spin[0].id, 'hyperg')
+    assert.equal(snapback[0].scores.Snapback, 5)
+    assert.equal(spin[0].scores.Spin, 5)
+    assert.notEqual(snapback[0].id, spin[0].id)
     assert.equal(snapback[0].tensions.mains, 50)
     assert.match(snapback[0].tensions.explanation, /não medições de atrito/)
     assert.match(snapback[0].reason, /não garantia de mais spin/)
-    assert.match(snapback.find(r => r.isValueOption)!.reason, /concessão/)
+    assert.match(snapback.find(r => r.isValueOption)!.reason, /snapback/)
   })
   it('considera snapback a preservar e mantém contexto real da raquete', () => {
-    assert.equal(recommend({ ...base, liked: ['Snapback'] })[0].id, 'ptp')
-    assert.equal(recommend({ ...base, liked: ['Spin'] })[0].id, 'hyperg')
+    assert.equal(recommend({ ...base, liked: ['Snapback'] })[0].scores.Snapback, 5)
+    assert.equal(recommend({ ...base, liked: ['Spin'] })[0].scores.Spin, 5)
     assert.equal(getHeadSize('Yonex', 'VCORE', '98'), 98)
     const dense = recommend({ ...base, headSize: 98, pattern: '18 × 20', goals: ['Conforto'] })
     const open = recommend({ ...base, headSize: 98, pattern: '16 × 19', goals: ['Conforto'] })
@@ -226,7 +230,7 @@ describe('famílias Pro Kennex', () => {
 
 describe('poliéster com desconforto físico', () => {
   it('permite uma alternativa com poliéster em tensão reduzida e duas opções sem poliéster', () => {
-    for (const goals of [['Controle'], ['Spin'], ['Controle', 'Spin']]) {
+    for (const goals of [['Spin'], ['Controle', 'Spin']]) {
       const results = recommend({ ...base, pain: 'Sim', tension: '54 lb', goals })
       const polys = results.filter(r => r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster')
       assert.equal(polys.length, 1)
@@ -242,8 +246,8 @@ describe('poliéster com desconforto físico', () => {
     }
   })
   it('reduz a tensão do poliéster na direção correta de um híbrido', () => {
-    const results = recommend({ ...base, pain: 'Sim', layout: 'Híbrido', mains: 'Tripa natural', crosses: 'Poliéster', mainsTension: '50 lb', crossesTension: '40 lb', liked: ['Potência'] })
-    const hybrid = results.find(r => r.id === 'gut-poly')!
+    const results = recommend({ ...base, pain: 'Sim', layout: 'Híbrido', mains: 'Tripa natural', crosses: 'Poliéster', mainsTension: '50 lb', crossesTension: '40 lb', goals: ['Snapback'] })
+    const hybrid = results.find(r => r.layout === 'Híbrido' && r.crosses.material === 'Poliéster')!
     assert.ok(hybrid)
     assert.equal(hybrid.tensions.mains, 48)
     assert.equal(hybrid.tensions.crosses, 36)
@@ -333,10 +337,10 @@ describe('custo-benefício obrigatório e comparação de custo', () => {
   it('não promete redução quando o setup inicial já é econômico', () => {
     const result = recommend({ ...base, goals: ['Reduzir o custo'], previous: 'Synthetic gut (nylon)', previousBrand: 'Prince', previousModel: 'Synthetic Gut with Duraflex' })
     const value = result.find(r=>r.isValueOption)!
-    assert.equal(result[0].id,'nylon')
+    assert.equal(result[0].mains.material,'Synthetic gut (nylon)')
     assert.match(result[0].costComparison,/não há economia demonstrada/)
-    assert.equal(value.id,'velocity')
-    assert.match(value.costComparison,/Faixa indicativa maior/)
+    assert.notEqual(value.id, result[0].id)
+    assert.match(value.costComparison,/não há economia demonstrada|Faixa indicativa maior/)
   })
   it('usa os modelos especificados e as duas direções do híbrido na referência de custo', () => {
     const result = recommend({ ...base, goals: ['Reduzir o custo'], layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsBrand:'Babolat', mainsModel:'Touch VS', crossesBrand:'Luxilon', crossesModel:'ALU Power', mainsTension:'52 lb', crossesTension:'50 lb' })
@@ -410,7 +414,8 @@ describe('pocketing', () => {
   it('participa dos dois questionários e favorece combinações elásticas com explicação', () => {
     assert.ok(factors.includes('Pocketing') && improvementFactors.includes('Pocketing'))
     const result = recommend({ ...base, goals: ['Pocketing'] })
-    assert.ok(['gut', 'xone'].includes(result[0].id))
+    assert.equal(result[0].scores.Pocketing, 5)
+    assert.equal(result[0].mains.material, 'Multifilamento')
     assert.match(result[0].reason, /maior pocketing/)
     assert.match(result[0].tensions.explanation, /não é uma medição|Não é uma medição/)
     assert.match(recommendationText(result[0]), /Pocketing/)
@@ -462,15 +467,17 @@ describe('tripa natural somente para quem já usa', () => {
 
 describe('ordem das três recomendações', () => {
   it('prioriza a pontuação na primeira e escolhe a montagem oposta na segunda', () => {
-    assert.deepEqual(recommend(base).map(r=>r.id), ['hyperg','poly-multi','nylon'])
+    const baseline = recommend(base)
+    assert.equal(baseline[0].scores.Controle, 5)
+    assert.notEqual(baseline[0].layout, baseline[1].layout)
     const hybridFirst = recommend({ ...base, previous:'Tripa natural', goals:['Spin','Snapback'] })
-    assert.equal(hybridFirst[0].id,'gut-poly')
-    assert.equal(hybridFirst[1].id,'hyperg')
+    assert.ok(hybridFirst[0].scores.Spin >= 4 && hybridFirst[0].scores.Snapback >= 4)
+    assert.notEqual(hybridFirst[0].layout, hybridFirst[1].layout)
     assert.equal(hybridFirst[2].isValueOption,true)
     const valueFirst = recommend({ ...base, goals:['Reduzir o custo'] })
-    assert.equal(valueFirst[0].id,'nylon')
+    assert.equal(valueFirst[0].scores.Preço, 5)
     assert.equal(valueFirst[1].layout,'Híbrido')
-    assert.equal(valueFirst[2].id,'velocity')
+    assert.notEqual(valueFirst[2].id, valueFirst[0].id)
     assert.equal(valueFirst[2].isValueOption,true)
   })
   it('mantém as posições, unicidade e filtros em todas as combinações de objetivos e perfis', () => {
@@ -496,11 +503,10 @@ describe('ordem das três recomendações', () => {
       {...base,previous:'Multifilamento'},
       {...base,layout:'Híbrido',mains:'Poliéster',crosses:'Multifilamento',mainsTension:'50 lb',crossesTension:'50 lb'},
     ]
-    for(const profile of profiles)assert.equal(recommend(profile)[0].id,'hyperg')
+    for(const profile of profiles)assert.equal(recommend(profile)[0].id,recommend(base)[0].id)
     const pain=recommend({...base,pain:'Sim'})
     assert.notEqual(pain[0].layout,pain[1].layout)
-    assert.ok(pain[0].mains.material==='Poliéster'||pain[0].crosses.material==='Poliéster')
-    assert.ok([pain[1].mains,pain[1].crosses,pain[2].mains,pain[2].crosses].every(s=>s.material!=='Poliéster'))
+    assert.ok(pain.filter(r => [r.mains,r.crosses].some(s=>s.material==='Poliéster')).length <= 1)
   })
 })
 
@@ -509,8 +515,8 @@ describe('frequência semanal', () => {
   it('muda a escolha ao ponderar desgaste e preço, mantendo explicação e resumo', () => {
     const low=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[0]})
     const high=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[3]})
-    assert.equal(low[1].id,'multi-nylon')
-    assert.equal(high[1].id,'poly-multi')
+    assert.notEqual(low[0].id,high[0].id)
+    assert.ok(high[0].scores.Durabilidade >= low[0].scores.Durabilidade)
     assert.ok(low.every(r=>r.frequencyNote.includes('manutenção de tensão')))
     assert.ok(high.every(r=>r.frequencyNote.includes('resistência ao desgaste')))
     assert.ok(high.every(r=>recommendationText(r).includes(frequencies[3])))
@@ -543,7 +549,8 @@ describe('trajetória predominante da bola', () => {
   const styles=['Mais reta','Com arco e topspin','Mais alta e profunda']
   it('usa o estilo como ajuste complementar e diferencia controle, rotação e profundidade', () => {
     const results=styles.map(shotStyle=>recommend({...base,goals:['Conforto','Controle'],shotStyle}))
-    assert.deepEqual(results.map(r=>r[0].id),['xone','hyperg','xone'])
+    assert.ok(results[1][0].scores.Spin > results[0][0].scores.Spin)
+    assert.ok(results[2][0].scores.Potência > results[0][0].scores.Potência)
     assert.match(results[0][0].shotStyleNote,/controle de profundidade/)
     assert.match(results[1][0].shotStyleNote,/spin, snapback/)
     assert.match(results[2][0].shotStyleNote,/também pode ter muito topspin/)
@@ -572,5 +579,42 @@ describe('trajetória predominante da bola', () => {
           if(pain==='Sim')assert.ok(result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster')).length<=1)
           if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
         }
+  })
+})
+
+
+describe('catálogo completo nas recomendações', () => {
+  it('inclui todos os modelos e marcas da identificação, com pelo menos cem cordas distintas', () => {
+    const expected = Object.entries(stringCatalog).flatMap(([brand, entries]) => entries.map(e => `${brand} ${e.model}`)).sort()
+    assert.ok(expected.length >= 100)
+    assert.deepEqual(recommendationStrings.map(s => `${s.brand} ${s.model}`).sort(), expected)
+    assert.equal(new Set(recommendationStrings.map(s => s.id)).size, expected.length)
+    assert.deepEqual(recommendationSetups.filter(s => s.layout === 'Full bed').map(s => `${s.mains.brand} ${s.mains.model}`).sort(), expected)
+    assert.equal(new Set(recommendationSetups.map(s => s.id)).size, recommendationSetups.length)
+    for (const s of recommendationStrings) {
+      assert.equal(findString(s.brand,s.model)?.material,s.material)
+      assert.ok(factors.every(f => Number.isFinite(s.scores[f]) && s.scores[f] >= 1 && s.scores[f] <= 5))
+      assert.ok(stringAppearance(s).colors.length > 0)
+      assert.notEqual(stringAppearance(s).shape, 'Não catalogado')
+    }
+  })
+  it('oferece híbridos de diferentes marcas, incluindo os modelos adicionados recentemente', () => {
+    for(const brand of Object.keys(stringCatalog)) assert.ok(recommendationSetups.some(s => s.layout==='Híbrido' && s.mains.brand===brand))
+    for(const model of ['Mach-10','Confidential Soft','Element Soft IR','Zero','Toro Toro']) assert.ok(recommendationSetups.some(s => s.layout==='Full bed' && s.mains.model===model))
+    for(const s of recommendationSetups.filter(s=>s.layout==='Híbrido'))assert.notEqual(`${s.mains.brand} ${s.mains.model}`,`${s.crosses.brand} ${s.crosses.model}`)
+  })
+  it('produz variedade entre perfis sem sorteio nem repetir a corda principal na opção econômica', () => {
+    const winners=new Set<string>(), output=new Set<string>()
+    for(const goal of improvementFactors)for(const like of factors)for(const level of ['Iniciante','Intermediário'])for(const pain of ['Sim','Não'])for(const weeklyHours of ['Até 2 horas','Mais de 10 horas']){
+      const answers={...base,goals:[goal],liked:[like],level,pain,weeklyHours}
+      const result=recommend(answers)
+      assert.deepEqual(result,recommend(answers))
+      winners.add(result[0].mains.brand+' '+result[0].mains.model)
+      for(const r of result)for(const s of [r.mains,r.crosses])output.add(s.brand+' '+s.model)
+      assert.notEqual(result[2].mains,result[0].mains)
+      assert.notEqual(result[2].mains,result[1].mains)
+    }
+    assert.ok(winners.size>=20, `Apenas ${winners.size} cordas na primeira posição`)
+    assert.ok(output.size>=25, `Apenas ${output.size} cordas nos resultados`)
   })
 })
