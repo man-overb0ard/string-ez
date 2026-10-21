@@ -1,3 +1,5 @@
+import { recommendGauge, referenceGauge, knownGauges, gaugeLabel } from '../src/stringGauge.ts'
+import type { StringSpec } from '../src/recommendations.ts'
 import { recommendationStrings } from '../src/recommendationStrings.ts'
 import { recommendationSetups } from '../src/recommendations.ts'
 import { stringAppearance } from '../src/stringAppearance.ts'
@@ -583,5 +585,61 @@ describe('poliésteres de conforto relativo', () => {
     const result = recommend({...base,pain:'Sim',goals:['Snapback'],liked:['Conforto']})
     assert.ok(result.some(r=>r.mains.material==='Poliéster'))
     assert.ok(result.every(r=>!r.tensions.explanation.includes('no máximo 45 lb')))
+  })
+})
+
+describe('calibre personalizado por modelo', () => {
+  const poly: StringSpec = { brand: 'Solinco', model: 'Hyper-G', material: 'Poliéster', gauge: '1,25 mm' }
+  const context = { goals: ['Controle'], liked: [], pattern: '16 × 19' }
+  it('parte de 1,25 mm no poliéster e não trata 1,20 como controle automático', () => {
+    assert.equal(recommendGauge(poly, context).spec.gauge, '1,25 mm')
+    assert.equal(recommendGauge(poly, { ...context, weeklyHours: 'Até 2 horas' }).spec.gauge, '1,25 mm')
+    assert.equal(referenceGauge({brand:'HEAD',model:'Velocity MLT',material:'Multifilamento'}),'1,30 mm')
+  })
+  it('escolhe medidas maiores para durabilidade e concilia conforto sem inferir rompimento pelas horas', () => {
+    assert.equal(recommendGauge(poly, { ...context, goals:['Durabilidade'] }).spec.gauge, '1,30 mm')
+    assert.equal(recommendGauge(poly, { ...context, goals:['Durabilidade','Conforto'], weeklyHours:'Mais de 10 horas' }).spec.gauge, '1,25 mm')
+    assert.equal(recommendGauge(poly, { ...context, weeklyHours:'Mais de 10 horas' }).spec.gauge, '1,25 mm')
+    assert.equal(recommendGauge(poly, { ...context, liked:['Durabilidade'], weeklyHours:'Mais de 10 horas' }).spec.gauge, '1,30 mm')
+    assert.equal(recommendGauge(poly, { ...context, liked:['Durabilidade'], pattern:'16 × 18',headSize:100 }).spec.gauge, '1,30 mm')
+  })
+  it('permite medida menor para resposta com contexto favorável, sem prometer mais controle ou conforto clínico', () => {
+    const thin = recommendGauge(poly, { ...context, goals:['Spin'], weeklyHours:'Até 2 horas' })
+    assert.equal(thin.spec.gauge, '1,20 mm')
+    assert.match(thin.explanation,/não significa automaticamente mais controle/)
+    assert.equal(recommendGauge(poly, { ...context, goals:['Pocketing'], pattern:'18 × 20' }).spec.gauge, '1,20 mm')
+    assert.equal(recommendGauge(poly, { ...context, goals:['Spin'], weeklyHours:'Mais de 10 horas' }).spec.gauge, '1,25 mm')
+  })
+  it('respeita medidas específicas sem inventar variantes para alcançar alvos genéricos', () => {
+    const xone = {brand:'Tecnifibre',model:'X-One Biphase',material:'Multifilamento',gauge:'1,30 mm'}
+    assert.equal(recommendGauge(xone,{...context,goals:['Conforto'],weeklyHours:'Até 2 horas'}).spec.gauge,'1,24 mm')
+    const cable = {brand:'Weiss Cannon',model:'Ultra Cable',material:'Poliéster',gauge:'1,23 mm'}
+    assert.equal(recommendGauge(cable,{...context,goals:['Durabilidade']}).spec.gauge,'1,23 mm')
+    const unknown = recommendGauge({brand:'Não catalogada',model:'Teste',material:'Poliéster',gauge:'1,25 mm'},context)
+    assert.equal(unknown.spec.gauge,'A confirmar')
+    assert.match(unknown.explanation,/não atribuímos 1,25 ou 1,30 mm automaticamente/)
+  })
+  it('retorna calibres catalogados, explica as direções e mantém metadados e restrições intactos', () => {
+    const before=JSON.stringify(recommendationSetups)
+    let hybridFound=false
+    for(const goals of [['Durabilidade'],['Conforto'],['Controle','Spin']])for(const level of ['Iniciante','Intermediário']){
+      const results = recommend({...base, goals, level, weeklyHours:'Até 2 horas'})
+      assert.deepEqual(results.map(r=>r.isValueOption),[false,false,true])
+      for(const r of results){
+        assert.ok(recommendationText(r).includes(r.gaugeNote))
+        for(const spec of [r.mains,r.crosses]){
+          const variants=knownGauges(spec)
+          assert.ok(variants.length ? variants.some(v=>gaugeLabel(v)===spec.gauge) : spec.gauge==='A confirmar')
+        }
+        if(r.layout==='Híbrido'){
+          hybridFound=true
+          assert.match(r.gaugeNote,/Verticais .* Horizontais /)
+        }
+        if(level==='Iniciante')assert.equal(r.layout,'Full bed')
+        assert.ok([r.mains,r.crosses].every(s=>s.material!=='Tripa natural'))
+      }
+    }
+    assert.ok(hybridFound)
+    assert.equal(JSON.stringify(recommendationSetups),before)
   })
 })

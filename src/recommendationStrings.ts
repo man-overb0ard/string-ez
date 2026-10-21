@@ -1,3 +1,4 @@
+import { referenceGauge } from './stringGauge.ts'
 import { stringCatalog } from './stringCatalog.ts'
 import { factors, type Factor } from './preferences.ts'
 import type { StringSpec } from './recommendations.ts'
@@ -118,11 +119,10 @@ const ratings: Record<string, readonly number[]> = {
 }
 const scoreKeys: Factor[] = ['Conforto', 'Controle', 'Potência', 'Spin', 'Durabilidade', 'Preço', 'Manutenção de tensão', 'Snapback', 'Pocketing']
 const legacyIds: Record<string, string> = { 'HEAD Velocity MLT': 'velocity', 'Tecnifibre X-One Biphase': 'xone', 'Prince Synthetic Gut with Duraflex': 'nylon', 'Babolat Touch VS': 'gut', 'Yonex POLYTOUR PRO': 'ptp', 'Solinco Hyper-G': 'hyperg', 'Solinco Hyper-G Soft': 'hyperg-soft', 'HEAD Lynx Tour': 'lynx-tour' }
-const gauges: Record<string, string> = { 'Solinco Hyper-G': '1,30 mm', 'Weiss Cannon Ultra Cable': '1,23 mm', 'Weiss Cannon Red Ghost': '1,18 mm', 'Weiss Cannon Mosquito Bite': '1,16 mm' }
 // Calibres de referência para comparação; confirmar variante e disponibilidade antes de comprar.
 export const recommendationStrings: StringProfile[] = Object.entries(stringCatalog).flatMap(([brand, models]) => models.map(({ model, material }) => {
   const key = `${brand} ${model}`
   const values = ratings[key]
   if (!values || values.length !== factors.length || values.some(v => !Number.isFinite(v) || v < 1 || v > 5)) throw new Error(`Perfil de recomendação inválido: ${key}`)
-  return { brand, model, material, gauge: gauges[key] ?? (material === 'Poliéster' ? '1,25 mm' : '1,30 mm'), id: legacyIds[key] ?? key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/-$/, ''), scores: Object.fromEntries(scoreKeys.map((factor, i) => [factor, values[i]])) as Record<Factor, number> }
+  return { brand, model, material, gauge: referenceGauge({ brand, model, material }), id: legacyIds[key] ?? key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/-$/, ''), scores: Object.fromEntries(scoreKeys.map((factor, i) => [factor, values[i]])) as Record<Factor, number> }
 }))

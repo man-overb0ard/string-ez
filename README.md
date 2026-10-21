@@ -168,3 +168,11 @@ Os testes cobrem paridade integral dos dois catálogos, participação das marca
 Os fatores informados (objetivos, preferências, horas, trajetória e conforto) continuam ponderando a pontuação. O desconforto dá peso ao conforto, sem penalidade fixa de poliéster. Foram retiradas as reduções e os tetos de tensão obrigatórios por nível/desconforto. Os ajustes de tensão por objetivos, troca de material e padrão de raquete permanecem, assim como a validação de entrada e o intervalo de 30–69 lb. A UI continua identificando exclusivamente a opção 03 como custo-benefício e o texto copiado também mantém essa identificação.
 
 A revisão de conforto relativo de Mach-10, Poly Tour Pro e Luxilon Element e suas fontes estão em [docs/string-comfort-review.md](docs/string-comfort-review.md). Esses modelos seguem elegíveis para quem relata dor; os playtests não demonstram segurança clínica nem uma tensão universal.
+
+## Calibre personalizado
+
+`src/stringGauge.ts` escolhe o calibre após a ordenação dos modelos, com base nas variantes em `src/gaugeVariants.ts`. São 83 modelos com variantes consultadas na Tennis Warehouse; os outros 24 continuam elegíveis, com calibre **A confirmar**. Fontes, medidas e limites da consulta estão em [docs/string-gauge-review.md](docs/string-gauge-review.md). Não há consulta de estoque em tempo real.
+
+Poliéster parte da medida confirmada mais próxima de 1,25 mm. Outros materiais usam a mais próxima de 1,30 mm. Durabilidade pode favorecer medida maior; prioridades de resposta/sensação podem favorecer medida menor quando combinadas com frequência menor ou padrão mais denso. Prioridades conflitantes mantêm uma referência intermediária. Horas de jogo não são interpretadas como histórico de rompimentos. Controle isoladamente não seleciona 1,20 mm, e maior calibre não promete melhor manutenção de tensão.
+
+As duas direções do híbrido são avaliadas independentemente e o full bed usa uma medida única. Cada cartão tem “Por que esse calibre?”, incluído também no texto copiado. Não há ajuste automático de tensão só por calibre, porque o calibre anterior ainda não é coletado. A seleção não altera a ordem dos modelos nem as três restrições existentes (tripa natural exige uso atual; iniciantes somente full bed; opção 03 identificada como custo-benefício).

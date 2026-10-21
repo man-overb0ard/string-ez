@@ -1,3 +1,4 @@
+import { recommendGauge } from './stringGauge.ts'
 import { recommendationStrings, type StringProfile } from './recommendationStrings.ts'
 import { shotStyleProfile } from './shotStyle.ts'
 import { weeklyPlayProfile } from './weeklyPlay.ts'
@@ -20,7 +21,7 @@ export type Recommendation = Setup & {
   reason: string; preservation: string; layoutChange: string
   tensions: { mains: number; crosses: number; explanation: string }
   tensionComparison: string; caution: string
-  shotStyleNote: string; frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
+  gaugeNote: string; shotStyleNote: string; frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
 }
 // Todo modelo do catálogo participa como full bed. Híbridos usam cruzamentos
 // selecionados por material, evitando o produto cartesiano de combinações sem propósito.
@@ -106,7 +107,11 @@ export function recommend(a: Answers): Recommendation[] {
   const second = ranked[1].setup
   const valueOption = ranked.find(({ setup }) => setup.scores.Preço >= 4 && setup.id !== first.id && setup.id !== second.id)!.setup
   const selected = [first, second, valueOption]
-  return selected.map(setup => {
+  return selected.map(candidate => {
+    const gaugeContext = { goals, liked, weeklyHours: a.weeklyHours, pattern: a.pattern, headSize }
+    const mainGauge = recommendGauge(candidate.mains, gaugeContext)
+    const crossGauge = candidate.layout === 'Full bed' ? mainGauge : recommendGauge(candidate.crosses, gaugeContext)
+    const setup = { ...candidate, mains: mainGauge.spec, crosses: crossGauge.spec }
     const notes = new Set<string>()
     notes.add(`Raquete considerada: ${racketContext}. A combinação de padrão e área da cabeça é uma referência aproximada de encordoamento ${spacing}; não mede o espaçamento real nem o ângulo de saída.`)
     if (!headSize) notes.add('Sem tamanho validado, o ajuste considera apenas a contagem de cordas; não atribui propriedades específicas à marca ou à linha.')
@@ -151,6 +156,7 @@ export function recommend(a: Answers): Recommendation[] {
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
+      gaugeNote: setup.layout === 'Full bed' ? mainGauge.explanation : `Verticais (${setup.mains.gauge}): ${mainGauge.explanation} Horizontais (${setup.crosses.gauge}): ${crossGauge.explanation}`,
       shotStyleNote: shot ? shot.note : '',
       frequencyNote: frequency ? `${frequency.label} por semana: ${frequency.note}${frequency.label === 'Até 2 horas' && hasPoly(setup) ? ' O poliéster pode perder resposta sem romper; acompanhe a condição das cordas entre as partidas.' : ''}` : '',
       appearanceNote: appearanceDescription(setup.mains, setup.crosses, setup.layout === 'Híbrido', color, shape),
@@ -170,5 +176,5 @@ export function recommendationText(r: Recommendation): string {
   const setup = r.layout === 'Full bed'
     ? `${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb em toda a raquete`
     : `Mains (verticais): ${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb\nCrosses (horizontais): ${stringName(r.crosses)} · ${r.crosses.material} · ${r.crosses.gauge} · ${r.tensions.crosses} lb`
-  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.frequencyNote}\n${r.shotStyleNote}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
+  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.frequencyNote}\n${r.shotStyleNote}\nCalibre: ${r.gaugeNote}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
 }
