@@ -1,6 +1,6 @@
 export const colorPreference = 'Cor da corda'
 export const shapePreference = 'Formato (Redondo, Hexagonal, etc.)'
-export const stringColors = { Azul: '#2466c5', Branca: '#ffffff', Cinza: '#777f87', Natural: '#ead6a0', Preta: '#242424', Verde: '#83bc36', Vermelha: '#cb3434', Amarela: '#efe342', Laranja: '#eb7d25' } as const
+export const stringColors = { Azul: '#2466c5', Branca: '#ffffff', Cinza: '#777f87', Natural: '#ead6a0', Preta: '#242424', Verde: '#83bc36', Vermelha: '#cb3434', Amarela: '#efe342', Laranja: '#eb7d25', Rosa: '#e85ba5' } as const
 export const stringShapes = ['Redondo', 'Quadrado', 'Hexagonal'] as const
 export type Appearance = { colors: readonly string[]; shape: string }
 // Variantes de referência do catálogo, sem consulta de estoque. Cor não indica desempenho.
