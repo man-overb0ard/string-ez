@@ -13,4 +13,4 @@ Arquivos obtidos dos sites oficiais e armazenados localmente para evitar depend�
 | `diadem.png` | https://diademsports.com/cdn/shop/files/Diadem-Logo-Teal-only-300x167.png |
 | `prokennex.png` | https://prokennex.com/cdn/shop/files/kennexlogo-black-white.png?v=1725403466 |
 
-Prince: o site oficial referencia uma imagem em `images.squarespace-cdn.com`, bloqueado no ambiente de execução. A interface usa a inicial P como fallback, sem imitar o logotipo. Para adicionar o arquivo oficial depois, inclua-o em `public/brands` e no mapa de `src/RacketBrandLogo.tsx`.
+Prince: logo verde preparado com fundo transparente a partir da referência enviada pelo usuário, armazenado em `public/brands/prince.png`. Usa a mesma base e dimensionamento dos demais logotipos.

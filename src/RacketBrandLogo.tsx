@@ -1,6 +1,6 @@
 const logos: Record<string, string> = {
   Babolat: 'babolat.svg', Diadem: 'diadem.png', Dunlop: 'dunlop.png', Head: 'head.svg',
-  'Pro Kennex': 'prokennex.png', Tecnifibre: 'tecnifibre.png', Wilson: 'wilson.svg', Yonex: 'yonex.svg',
+  Prince: 'prince.png', 'Pro Kennex': 'prokennex.png', Tecnifibre: 'tecnifibre.png', Wilson: 'wilson.svg', Yonex: 'yonex.svg',
 }
 export default function RacketBrandLogo({ brand }: { brand: string }) {
   const logo = logos[brand]
