@@ -5,7 +5,7 @@ import RacketBrandLogo from './RacketBrandLogo'
 import StringBedDiagram from './StringBedDiagram'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
-import { stringCatalog, specifyString, findString, resolveStringMaterial } from './stringCatalog'
+import { stringCatalog, specifyString, findString, resolveStringMaterial, materialLabel } from './stringCatalog'
 import { improvementFactors, launchLow, launchHigh, nothingLiked, togglePreference, canSelectPreference } from './preferences'
 import ThemePicker from './ThemePicker'
 import { themes, readSavedTheme, themeStorageKey } from './themes'
@@ -79,7 +79,7 @@ function App() {
   ]
   const result = step === questions.length
   const q = questions[step]
-  const options = q?.key === 'level' ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString)), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
+  const options = q?.key === 'level' ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'
@@ -95,8 +95,8 @@ function App() {
   const answerText = (key: keyof Answers) => {
     if (key === 'liked') return answers.liked.map(value => value === colorPreference ? `${value}: ${answers.preferredColor}` : value === shapePreference ? `${value}: ${answers.preferredShape}` : value).join(', ')
     if (key === 'goals' || key === 'painDetails') return answers[key].join(', ')
-    if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialFor(key)
-    return answers[key]
+    if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialLabel(materialFor(key))
+    return typeof answers[key] === 'string' ? materialLabel(answers[key]) : answers[key]
   }
   function move(next: number) {
     setStep(next)
@@ -167,7 +167,7 @@ function App() {
             {isTension ? <TensionSelector key={q.key} label={q.title} selected={String(answers[q.key])} onSelect={choose} />
               : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{option}{(option === launchLow || option === launchHigh) && <small className="angle-option-hint">{option === launchLow ? 'Trajetória inicial mais baixa ao deixar as cordas.' : 'Trajetória inicial mais alta ao deixar as cordas.'}</small>}</span></label>)}</div>
                 : <div className={q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{options.map(option => <button type="button" className={`choice${answers[q.key] === option ? ' selected' : ''}${option === specifyString ? ' specify-string-choice' : ''}`} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
-                  {q.key === 'brand' ? <RacketBrandLogo brand={option} /> : q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><span className="string-color-legend"><span><i className="string-swatch mains-swatch" aria-hidden="true" />{option === 'Full bed' ? '↕ ↔ Mesma corda' : '↕ Verticais · corda A'}</span>{option === 'Híbrido' && <span><i className="string-swatch crosses-swatch" aria-hidden="true" />↔ Horizontais · corda B</span>}</span></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material}</small></span> : option}<span aria-hidden="true">→</span>
+                  {q.key === 'brand' ? <RacketBrandLogo brand={option} /> : q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><span className="string-color-legend"><span><i className="string-swatch mains-swatch" aria-hidden="true" />{option === 'Full bed' ? '↕ ↔ Mesma corda' : '↕ Verticais · corda A'}</span>{option === 'Híbrido' && <span><i className="string-swatch crosses-swatch" aria-hidden="true" />↔ Horizontais · corda B</span>}</span></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{materialLabel(findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material ?? '')}</small></span> : materialLabel(option)}<span aria-hidden="true">→</span>
                 </button>)}</div>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>

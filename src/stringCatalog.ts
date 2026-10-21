@@ -27,3 +27,12 @@ export function findString(brand: string, model: string): CatalogString | undefi
 export function resolveStringMaterial(choice: string, brand: string, model: string): string {
   return choice === specifyString ? findString(brand, model)?.material ?? '' : choice
 }
+
+export function materialLabel(material: string): string {
+  const labels: Record<string, string> = {
+    'Synthetic gut (nylon)': 'Tripa sintética (Synthetic gut ou Nylon)',
+    'Tripa natural': 'Tripa natural (Natural gut)',
+    'Poliéster': 'Poliéster - Monofilamento ou Copolímero',
+  }
+  return labels[material] ?? material
+}
