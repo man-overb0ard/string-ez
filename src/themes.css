@@ -58,3 +58,6 @@
   --cross-bg:#ffede6; --cross:#963e25; --cross-border:#b65335; --focus:#a34427; --frame:#54799f;
 }
 .theme-portrait[data-player=djokovic]{background-image:url('./assets/djokovic-blue.png');background-size:auto 135%;background-position:center 3%}
+/* O sprite não tem divisões exatas: recorte interno evita mostrar o tenista vizinho. */
+.theme-portrait[data-player=guga]{background-size:600% auto;background-position:26% 20%}
+.theme-portrait[data-player=agassi]{background-size:600% auto;background-position:51.5% 20%}
