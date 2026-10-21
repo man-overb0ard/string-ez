@@ -13,7 +13,7 @@ export const stringCatalog: Record<string, CatalogString[]> = {
   HEAD: [poly('Lynx'), poly('Lynx Tour'), poly('Hawk'), poly('Hawk Touch'), poly('Hawk Power'), multi('Velocity MLT'), multi('RIP Control')],
   'Signum Pro': [poly('Poly Plasma'), poly('Plasma Pure'), poly('Tornado'), poly('Hyperion'), poly('Firestorm'), poly('X-Perience'), multi('Micronite')],
   'Robin Söderling (RS)': [poly('Lyon'), poly('Paris'), multi('New York')],
-  Luxilon: [poly('ALU Power'), poly('ALU Power Rough'), poly('4G'), poly('4G Soft'), poly('Element'), poly('Original'), poly('Eco Power'), gut('Natural Gut')],
+  Luxilon: [poly('ALU Power'), poly('ALU Power Rough'), poly('4G'), poly('4G Soft'), poly('Element'), poly('Element Soft IR'), poly('Original'), poly('Eco Power'), gut('Natural Gut')],
   Wilson: [multi('Sensation'), multi('NXT'), multi('NXT Power'), poly('Revolve'), poly('Revolve Spin'), nylon('Synthetic Gut Power')],
   Prince: [nylon('Synthetic Gut with Duraflex'), multi('Premier Control'), poly('Tour XP'), poly('Tour XC')],
   Kirschbaum: [poly('Pro Line II'), poly('Max Power'), poly('Super Smash Orange'), poly('Black Shark')],
@@ -21,6 +21,8 @@ export const stringCatalog: Record<string, CatalogString[]> = {
   Dunlop: [poly('Black Widow'), poly('Explosive Bite'), poly('Explosive Speed'), multi('Iconic All'), multi('Iconic Touch')],
   Toroline: [poly('Caviar'), poly('Enso Pro'), poly('O-Toro'), poly('Super Toro'), poly('Toro Toro'), poly('Wasabi'), poly('Wasabi X')],
   ReString: [poly('Zero'), poly('Sync')],
+  Volkl: [poly('Cyclone'), poly('Cyclone Tour'), poly('V-Pro'), poly('V-Torque'), poly('V-Torque Tour'), poly('V-Star'), multi('Power Fiber II'), nylon('Classic Synthetic Gut')],
+  'Weiss Cannon': [poly('Ultra Cable'), poly('Silverstring'), poly('Scorpion'), poly('Black 5 Edge'), poly('Red Ghost'), poly('TurboTwist'), poly('Mosquito Bite'), multi('Explosiv!')],
   Tourna: [poly('Big Hitter Silver'), poly('Big Hitter Blue'), poly('Big Hitter Black 7')],
 }
 export function findString(brand: string, model: string): CatalogString | undefined {
