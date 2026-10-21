@@ -112,3 +112,5 @@ As opções textuais do questionário, incluindo marcas, linhas e modelos de raq
 O tema Djokovic usa azul-celeste e cobalto do outfit de referência, com coral nos detalhes das horizontais. A caricatura transparente está em `src/assets/djokovic-blue.png`. O seletor inicial oferece sete tenistas; a seleção de Djokovic persiste no navegador e é aplicada antes da primeira renderização.
 
 O tema Sinner combina mostarda, oliva e preto da foto de referência. A caricatura em `src/assets/sinner-mustard.png` usa um arquivo individual transparente para evitar trechos de outros tenistas no recorte. A seleção persiste no navegador e participa da aplicação antecipada do tema.
+
+Os diagramas de encordoamento usam cores fixas para facilitar a comparação: full bed em azul, híbrido com verticais azuis e horizontais laranjas, sobre fundo claro. Na seleção, legendas com setas identificam as duas direções. As cores são ilustrativas e independentes do tema e da cor real das cordas.
