@@ -175,7 +175,7 @@ function App() {
           {isLiked && answers.liked.includes(shapePreference) && <fieldset className="appearance-picker"><legend>Qual formato você quer manter?</legend><p className="micro">Escolha a seção da corda, não o padrão da raquete. No híbrido, priorizamos as verticais.</p><div className="color-options">{sortOptions(stringShapes).map(shape => <button type="button" key={shape} aria-pressed={answers.preferredShape === shape} onClick={() => setAnswers(current => ({ ...current, preferredShape: shape }))}>{shape}</button>)}</div></fieldset>}
           <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!multiSelection.length || (isLiked && !appearanceComplete)} type="submit">Continuar →</button>}</div>
         </form>
-        <p className="micro">Suas respostas ficam apenas nesta sessão. Nenhum dado é enviado.</p>
+        <p className="micro">Suas respostas ficam apenas nesta sessão e não são enviadas.</p>
       </section>}
     </main>
     <footer><span>STRING EZ © {currentYear}</span><span>Recomendações por regras · versão inicial</span></footer>

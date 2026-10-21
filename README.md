@@ -128,3 +128,7 @@ O wordmark `string-ez` usa Sora variável servida localmente (`src/assets/fonts`
 “Pocketing” também está nos dois questionários, explicado como a sensação de a bola afundar e ser abraçada pelas cordas no impacto. Recebe uma classificação independente por combinação (1–5), ponderada como os demais fatores, sem ajuste de tensão próprio. Os resultados explicitam potencial ou concessão; não há medição de tempo de contato ou garantia da sensação. Os limites continuam em três pontos a preservar e dois objetivos.
 
 Tripa natural só entra nas recomendações quando o setup atual já contém esse material: full bed de tripa ou ao menos uma direção do híbrido. O filtro exclui tanto Touch VS em full bed quanto híbridos com tripa para os demais usuários, antes da ordenação por objetivos/cor/formato. Dados de uma configuração anterior inativa não liberam tripa. Mantêm-se três opções e uma de custo-benefício.
+
+## Vercel Web Analytics
+
+`@vercel/analytics` é montado uma única vez com `<Analytics />` em `src/main.tsx`. Web Analytics precisa estar habilitado no projeto Vercel. Após o deploy, registra as métricas padrão de acesso; não foram adicionados eventos personalizados nem envio das respostas do questionário. As etapas usam estado React sem mudar de URL, portanto não são contadas como páginas separadas. Em desenvolvimento, o pacote usa modo de depuração. Para validar no deploy, abra o site, navegue e confira Analytics na Vercel; bloqueadores de conteúdo podem impedir a coleta.
