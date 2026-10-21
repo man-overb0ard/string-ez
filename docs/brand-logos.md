@@ -14,3 +14,5 @@ Arquivos obtidos dos sites oficiais e armazenados localmente para evitar depend�
 | `prokennex.png` | https://prokennex.com/cdn/shop/files/kennexlogo-black-white.png?v=1725403466 |
 
 Prince: logo verde preparado com fundo transparente a partir da referência enviada pelo usuário, armazenado em `public/brands/prince.png`. Usa a mesma base e dimensionamento dos demais logotipos.
+
+Volkl: logo com símbolo e wordmark Völkl preparado a partir da referência enviada pelo usuário, armazenado em `public/brands/volkl.png`, sobre a mesma base branca dos demais logotipos.
