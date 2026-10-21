@@ -13,6 +13,7 @@ import { allThemes, readSavedTheme, themeStorageKey } from './themes'
 import { sortOptions } from './sortOptions'
 import { colorPreference, shapePreference, stringColors, stringShapes } from './stringAppearance'
 import creatorPortrait from './assets/joao-caricature.png'
+import { weeklyHoursOptions } from './weeklyPlay'
 import './App.css'
 
 type Answers = RecommendationAnswers & {
@@ -23,7 +24,7 @@ type Answers = RecommendationAnswers & {
 type Question = { key: keyof Answers; title: string; hint: string; options?: string[] }
 const currentYear = new Date().getFullYear()
 type StringSlot = 'previous' | 'mains' | 'crosses'
-const initial: Answers = { previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
+const initial: Answers = { weeklyHours: '', previousBrand: '', previousModel: '', mainsBrand: '', mainsModel: '', crossesBrand: '', crossesModel: '', brand: '', line: '', layout: '', mains: '', crosses: '', mainsTension: '', crossesTension: '', level: '', racket: '', pattern: '', previous: '', tension: '', goals: [], pain: '', painDetails: [], liked: [] }
 const levelRanges: Record<string, string> = { Iniciante: 'NTRP 1.0 a 3.0', Intermediário: 'NTRP 3.5 a 4.5', Avançado: 'NTRP 5.0 a 7.0' }
 const stringTypes = ['Multifilamento', 'Synthetic gut (nylon)', 'Poliéster', 'Tripa natural', specifyString]
 const likesQuestion: Question = {
@@ -64,6 +65,7 @@ function App() {
     { key: 'racket', title: 'Qual é o modelo da sua raquete?', hint: 'Selecione o modelo indicado no aro da sua raquete.', options: (rackets[answers.brand]?.[answers.line] ?? []).map(model => model.name) },
     ...(patterns.length > 1 ? [{ key: 'pattern' as const, title: 'Qual é o padrão de cordas?', hint: 'Este modelo tem mais de um padrão no catálogo. Confira na sua raquete: verticais × horizontais.', options: patterns }] : []),
     { key: 'level', title: 'Como é o seu jogo hoje?', hint: 'Escolha o nível que mais combina com seu jogo. As faixas NTRP são uma referência aproximada para esta seleção.', options: ['Iniciante', 'Intermediário', 'Avançado'] },
+    { key: 'weeklyHours', title: 'Quantas horas por semana você costuma jogar?', hint: 'Pense na sua rotina habitual de treinos e partidas. Isso ajuda a equilibrar manutenção de tensão, desgaste e preço das trocas.', options: [...weeklyHoursOptions] },
     { key: 'layout', title: 'Como está montado seu encordoamento?', hint: 'Escolha a configuração que você usa hoje. Mains são as cordas verticais; crosses, as horizontais.', options: ['Full bed', 'Híbrido'] },
     ...(hybrid ? [
       ...stringQuestions('mains'),
@@ -81,7 +83,7 @@ function App() {
   ]
   const result = step === questions.length
   const q = questions[step]
-  const options = q?.key === 'level' ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
+  const options = (q?.key === 'level' || q?.key === 'weeklyHours') ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'

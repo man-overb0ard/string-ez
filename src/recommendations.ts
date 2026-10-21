@@ -1,3 +1,4 @@
+import { weeklyPlayProfile } from './weeklyPlay.ts'
 import { colorPreference, shapePreference, stringColors, stringShapes, stringAppearance, appearanceDescription } from './stringAppearance.ts'
 import { stringCostBand, compareCost, costNote } from './cost.ts'
 import { MIN_TENSION, MAX_TENSION } from './tensionRange.ts'
@@ -5,7 +6,7 @@ import { factors, improvementFactors, reduceCost, type ImprovementFactor, type F
 export { factors } from './preferences.ts'
 export type Answers = {
   level: string; racket: string; pattern: string; previous: string; tension: string; goals: string[]; pain: string
-  preferredColor?: string; preferredShape?: string; layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number; previousBrand?: string; previousModel?: string; mainsBrand?: string; mainsModel?: string; crossesBrand?: string; crossesModel?: string
+  weeklyHours?: string; preferredColor?: string; preferredShape?: string; layout?: string; mains?: string; crosses?: string; mainsTension?: string; crossesTension?: string; liked?: string[]; headSize?: number; previousBrand?: string; previousModel?: string; mainsBrand?: string; mainsModel?: string; crossesBrand?: string; crossesModel?: string
 }
 export type StringSpec = { brand: string; model: string; material: string; gauge: string }
 type Scores = Record<Factor, number>
@@ -17,7 +18,7 @@ export type Recommendation = Setup & {
   reason: string; preservation: string; layoutChange: string
   tensions: { mains: number; crosses: number; explanation: string }
   tensionComparison: string; caution: string
-  appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
+  frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
 }
 const strings = {
   velocity: { brand: 'HEAD', model: 'Velocity MLT', material: 'Multifilamento', gauge: '1,30 mm' },
@@ -51,6 +52,8 @@ function parseTension(value: string | undefined): number | null {
   return n >= MIN_TENSION && n <= MAX_TENSION ? n : null
 }
 export function recommend(a: Answers): Recommendation[] {
+  const frequency = weeklyPlayProfile(a.weeklyHours)
+  if (a.weeklyHours !== undefined && !frequency) return []
   const currentLayout = a.layout ?? 'Full bed'
   const currentMains = currentLayout === 'Híbrido' ? a.mains ?? '' : a.previous
   const currentCrosses = currentLayout === 'Híbrido' ? a.crosses ?? '' : a.previous
@@ -89,7 +92,7 @@ export function recommend(a: Answers): Recommendation[] {
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
     (!softOnly || (s.layout === 'Full bed' && s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
   )
-  const ranked = eligible.map(setup => ({ setup, score: appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  const ranked = eligible.map(setup => ({ setup, score: (frequency ? frequency.retention * setup.scores['Manutenção de tensão'] + frequency.durability * setup.scores.Durabilidade + frequency.price * setup.scores.Preço : 0) + appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   const currentCost = currentLayout === 'Híbrido'
     ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
     : stringCostBand(currentMains, a.previousBrand, a.previousModel)
@@ -158,6 +161,7 @@ export function recommend(a: Answers): Recommendation[] {
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
+      frequencyNote: frequency ? `${frequency.label} por semana: ${frequency.note}${frequency.label === 'Até 2 horas' && hasPoly(setup) ? ' O poliéster pode perder resposta sem romper; acompanhe a condição das cordas entre as partidas.' : ''}` : '',
       appearanceNote: appearanceDescription(setup.mains, setup.crosses, setup.layout === 'Híbrido', color, shape),
       isValueOption: setup.id === valueOption.id,
       costComparison: compareCost(currentCost, setupCost(setup)),
@@ -175,5 +179,5 @@ export function recommendationText(r: Recommendation): string {
   const setup = r.layout === 'Full bed'
     ? `${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb em toda a raquete`
     : `Mains (verticais): ${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb\nCrosses (horizontais): ${stringName(r.crosses)} · ${r.crosses.material} · ${r.crosses.gauge} · ${r.tensions.crosses} lb`
-  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
+  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.frequencyNote}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
 }

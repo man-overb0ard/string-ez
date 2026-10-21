@@ -138,3 +138,9 @@ O catálogo de identificação inclui Luxilon Element Soft IR, Volkl (Cyclone, C
 Volkl está no catálogo de raquetes com as linhas Vostra, V-Cell, C10 e Power Bridge. A inclusão da Mizuno foi cancelada. As variantes V8 usam referência 16 × 18, as demais novas entradas 16 × 19. As áreas são metadados de referência, não validação de geração ou faixa de tensão. Não houve consulta ao vivo às fichas da Volkl devido ao bloqueio de rede, e a lista não é exaustiva. O logotipo da Volkl foi adicionado a partir da referência enviada pelo usuário, mantendo o nome acessível.
 
 A etapa de nível mostra a seção “Está em dúvida?” abaixo das três escolhas. A tabela em `src/NtrpGuide.tsx` usa as faixas aprovadas no app: iniciante 1.0–3.0, intermediário 3.5–4.5 e avançado 5.0–7.0, com descrições em português. No celular, cada linha agrupa nível e NTRP acima da descrição para evitar rolagem horizontal. A referência não muda a seleção automática nem as regras de recomendação.
+
+## Frequência semanal
+
+Após o nível, “Quantas horas por semana você costuma jogar?” oferece, em ordem crescente: até 2 horas, mais de 2 até 5, mais de 5 até 10 e mais de 10. A seleção avança automaticamente; voltar preserva a resposta. A frequência aparece no resumo, na cópia e na justificativa de cada recomendação.
+
+`src/weeklyPlay.ts` define pesos adicionais de manutenção de tensão/durabilidade/preço: até 2 h = 1/0/0; 2–5 h = 0,25/0,25/0,25; 5–10 h = 0,5/1/0,5; mais de 10 h = 0,5/1/1. São ajustes heurísticos de ordenação, sem cálculo de vida útil ou custo/hora e sem modificar diretamente as tensões. Não liberam poliéster para iniciantes nem tripa para quem não usa, e mantêm a exceção de desconforto e a organização das três opções. Para compatibilidade com consumidores anteriores, o motor permite ausência do campo; valores informados inválidos são rejeitados. O fluxo do app exige a escolha antes de avançar.

@@ -503,3 +503,38 @@ describe('ordem das três recomendações', () => {
     assert.ok([pain[1].mains,pain[1].crosses,pain[2].mains,pain[2].crosses].every(s=>s.material!=='Poliéster'))
   })
 })
+
+describe('frequência semanal', () => {
+  const frequencies = ['Até 2 horas','Mais de 2 até 5 horas','Mais de 5 até 10 horas','Mais de 10 horas']
+  it('muda a escolha ao ponderar desgaste e preço, mantendo explicação e resumo', () => {
+    const low=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[0]})
+    const high=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[3]})
+    assert.equal(low[1].id,'multi-nylon')
+    assert.equal(high[1].id,'poly-multi')
+    assert.ok(low.every(r=>r.frequencyNote.includes('manutenção de tensão')))
+    assert.ok(high.every(r=>r.frequencyNote.includes('resistência ao desgaste')))
+    assert.ok(high.every(r=>recommendationText(r).includes(frequencies[3])))
+    assert.deepEqual(recommend({...base,weeklyHours:'Mais de 99 horas'}),[])
+    assert.deepEqual(recommend({...base,weeklyHours:''}),[])
+  })
+  it('a frequência sozinha não altera a tensão do mesmo setup', () => {
+    const low=recommend({...base,weeklyHours:frequencies[0]})
+    for(const weeklyHours of frequencies)for(const r of recommend({...base,weeklyHours})){
+      const same=low.find(other=>other.id===r.id)
+      if(same)assert.deepEqual(r.tensions,same.tensions)
+    }
+  })
+  it('preserva posições e filtros em todas as frequências, objetivos e perfis', () => {
+    for(const weeklyHours of frequencies)for(const level of ['Iniciante','Intermediário','Avançado'])
+      for(const pain of ['Sim','Não'])for(const previous of ['Poliéster','Tripa natural'])for(const goal of improvementFactors){
+        const result=recommend({...base,weeklyHours,level,pain,previous,goals:[goal]})
+        assert.equal(result.length,3)
+        assert.equal(new Set(result.map(r=>r.id)).size,3)
+        assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
+        if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'&&[r.mains,r.crosses].every(s=>s.material!=='Poliéster')))
+        else assert.notEqual(result[0].layout,result[1].layout)
+        if(pain==='Sim')assert.ok(result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster')).length<=1)
+        if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
+      }
+  })
+})
