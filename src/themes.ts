@@ -7,11 +7,13 @@ export const themes = [
   { id: 'djokovic', name: 'Djokovic', fullName: 'Novak Djokovic', outfit: 'Azul-celeste, cobalto e coral', colors: ['#78b9ed', '#1554ab', '#ff916f'], browserColor: '#1554ab', position: '50%' },
   { id: 'sinner', name: 'Sinner', fullName: 'Jannik Sinner', outfit: 'Mostarda, oliva e preto', colors: ['#d4a51c', '#56502b', '#181914'], browserColor: '#56502b', position: '50%' },
 ] as const
-export type ThemeId = typeof themes[number]['id']
+export const secretTheme = { id: 'jungle', browserColor: '#10291c' } as const
+export const allThemes = [...themes, secretTheme] as const
+export type ThemeId = typeof allThemes[number]['id']
 export const themeStorageKey = 'string-ez-theme'
 export function readSavedTheme(): ThemeId {
   try {
     const saved = window.localStorage.getItem(themeStorageKey)
-    return themes.find(theme => theme.id === saved)?.id ?? 'alcaraz'
+    return allThemes.find(theme => theme.id === saved)?.id ?? 'alcaraz'
   } catch { return 'alcaraz' }
 }

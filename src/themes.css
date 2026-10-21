@@ -69,3 +69,17 @@
   --cross-bg:#e6e9d9; --cross:#454e2d; --cross-border:#69734a; --focus:#77520b; --frame:#747554;
 }
 .theme-portrait[data-player=sinner]{background-image:url('./assets/sinner-mustard.png');background-size:auto 165%;background-position:center 3%}
+
+/* Vibe secreta: selva, madeira e amarelo-banana, fora do seletor de outfits. */
+:root[data-theme=jungle] {
+  color-scheme:dark;
+  --page-bg:#10291c; --text:#fff3d0; --muted:#d0d6b3; --muted-small:#bbc6a3;
+  --surface:#203c27; --border:#79845a; --primary:#f6cf42; --on-primary:#302008; --primary-hover:#ffdf68;
+  --accent:#f2d373; --soft:#354727; --soft-hover:#40552e; --notice:#373821; --panel:#2e3521;
+  --cross-bg:#463022; --cross:#ffd2a0; --cross-border:#c18b51; --focus:#ffe787; --frame:#d8ba7a; --ball-seam:#4c3512;
+}
+:root[data-theme=jungle] body{background:radial-gradient(ellipse at 0% 0%,#31532680,transparent 45%),radial-gradient(ellipse at 100% 35%,#365d284d,transparent 40%),var(--page-bg)}
+:root[data-theme=jungle] .welcome h1 em{color:var(--primary);text-shadow:2px 3px 0 #251b12}
+:root[data-theme=jungle] .primary{border:1px solid #ffea83;border-bottom:4px solid #93611d;box-shadow:0 3px 0 #091b12}
+:root[data-theme=jungle] .cards article{border-color:#9b7b4c;background:linear-gradient(110deg,#4d342429,#4d342400),var(--surface)}
+:root[data-theme=jungle] header,:root[data-theme=jungle] footer{border-color:#8f754a}
