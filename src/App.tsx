@@ -3,6 +3,7 @@ import { factors, recommend, recommendationText, type Answers as RecommendationA
 import { rackets, getPatterns, racketLabel, getHeadSize } from './rackets'
 import RacketBrandLogo from './RacketBrandLogo'
 import StringBedDiagram from './StringBedDiagram'
+import NtrpGuide from './NtrpGuide'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
 import { stringCatalog, specifyString, findString, resolveStringMaterial, materialLabel } from './stringCatalog'
@@ -171,6 +172,7 @@ function App() {
                 </button>)}</div>}
             {q.key === 'layout' && <p className="micro">Cores apenas ilustrativas: um híbrido pode ter cordas da mesma cor.</p>}
           </fieldset>
+          {q.key === 'level' && <NtrpGuide />}
           {isLiked && answers.liked.includes(colorPreference) && <fieldset className="appearance-picker"><legend>Qual cor base você quer manter?</legend><p className="micro">No híbrido, vamos priorizar essa cor nas verticais. A disponibilidade pode variar por calibre e loja.</p><div className="color-options">{sortOptions(Object.keys(stringColors)).map(color => <button type="button" key={color} aria-pressed={answers.preferredColor === color} onClick={() => setAnswers(current => ({ ...current, preferredColor: color }))}><i aria-hidden="true" style={{ background: stringColors[color as keyof typeof stringColors] }} />{color}</button>)}</div></fieldset>}
           {isLiked && answers.liked.includes(shapePreference) && <fieldset className="appearance-picker"><legend>Qual formato você quer manter?</legend><p className="micro">Escolha a seção da corda, não o padrão da raquete. No híbrido, priorizamos as verticais.</p><div className="color-options">{sortOptions(stringShapes).map(shape => <button type="button" key={shape} aria-pressed={answers.preferredShape === shape} onClick={() => setAnswers(current => ({ ...current, preferredShape: shape }))}>{shape}</button>)}</div></fieldset>}
           <div className="actions"><button type="button" className="secondary" onClick={() => move(step - 1)}>← Voltar</button>{isMulti && <button className="primary" disabled={!multiSelection.length || (isLiked && !appearanceComplete)} type="submit">Continuar →</button>}</div>
