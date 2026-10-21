@@ -1,4 +1,4 @@
-export const specifyString = 'Quero especificar'
+export const specifyString = 'Quero informar o modelo exato'
 export type CatalogString = { model: string; material: string }
 const poly = (model: string): CatalogString => ({ model, material: 'Poliéster' })
 const multi = (model: string): CatalogString => ({ model, material: 'Multifilamento' })

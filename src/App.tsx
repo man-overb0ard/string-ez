@@ -50,7 +50,7 @@ function App() {
     const brandKey = `${slot}Brand` as const
     const modelKey = `${slot}Model` as const
     return [
-      { key: slot, title: `Que corda você usa${directionName || ' hoje'}?`, hint: 'Escolha o tipo de corda ou toque em “Quero especificar” para informar marca e modelo.', options: stringTypes },
+      { key: slot, title: `Que corda você usa${directionName || ' hoje'}?`, hint: 'Escolha o tipo de corda ou toque em “Quero informar o modelo exato” para informar marca e modelo.', options: stringTypes },
       ...(answers[slot] === specifyString ? [
         { key: brandKey, title: `Qual é a marca da corda${directionName}?`, hint: 'Selecione a marca da corda que você usa atualmente.', options: Object.keys(stringCatalog) },
         { key: modelKey, title: `Qual é o modelo da corda${directionName}?`, hint: `Escolha o modelo da sua corda ${answers[brandKey]}.`, options: (stringCatalog[answers[brandKey]] ?? []).map(entry => entry.model) },
