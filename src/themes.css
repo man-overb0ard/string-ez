@@ -48,7 +48,7 @@
 @media(max-width:700px){.theme-picker{margin:26px 0}.theme-options{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:9px;padding:5px 3px 12px;overscroll-behavior-x:contain}.theme-option{min-width:104px;flex:0 0 104px;scroll-snap-align:start}.theme-portrait{height:112px}.theme-picker-heading{font-size:12px}.theme-picker-hint{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.theme-option{transition:none}.theme-option:hover{transform:none}}
 .welcome,.welcome .intro,.theme-picker{min-width:0}.welcome .intro{width:100%}.theme-options{min-width:0;max-width:100%}
-.outfit-mobile-hint{display:none}@media(max-width:700px){.outfit-desktop-hint{display:none}.outfit-mobile-hint{display:inline}}
+.outfit-mobile-hint{display:none}@media(max-width:700px){.outfit-mobile-hint{display:inline}}
 .theme-portrait[data-player=federer]{background-image:url('./assets/federer-black.png');background-size:auto 145%;background-position:center 5%}
 
 :root[data-theme=djokovic] {
@@ -92,3 +92,5 @@
   --cross-bg:#eef0f3; --cross:#505762; --cross-border:#737984; --focus:#515763; --frame:#777e88; --ball-seam:#ffffff;
 }
 .theme-portrait[data-player=sampras]{background-image:url('./assets/sampras-white.png');background-size:auto 165%;background-position:center 3%}
+
+.theme-picker-explanation{display:block;margin-top:6px;font-size:11px;font-weight:400;color:var(--muted);line-height:1.5}
