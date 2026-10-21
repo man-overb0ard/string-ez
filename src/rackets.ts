@@ -99,7 +99,38 @@ const verifiedFamilies: Record<string, Record<string, RacketModel[]>> = {
     ],
   },
 }
-export const rackets: Record<string, Record<string, RacketModel[]>> = Object.fromEntries(
+// Catálogo de identificação das marcas adicionais; fichas não consultadas ao vivo.
+// Valores de referência não validam gerações nem a faixa de tensão do fabricante.
+function catalogModel(name: string, pattern: string, headSize: number): RacketModel {
+  return { name, patterns: [pattern], headSize }
+}
+const volklModernModels = () => [
+  catalogModel('V1 MP', '16 × 19', 102),
+  catalogModel('V1 OS', '16 × 19', 110),
+  catalogModel('V1 Pro', '16 × 19', 99),
+  catalogModel('V4', '16 × 19', 105),
+  catalogModel('V6', '16 × 19', 100),
+  catalogModel('V7', '16 × 19', 104),
+  catalogModel('V8 285 g', '16 × 18', 100),
+  catalogModel('V8 300 g', '16 × 18', 100),
+  catalogModel('V8 315 g', '16 × 18', 100),
+  catalogModel('V9', '16 × 19', 100),
+  catalogModel('V10 300 g', '16 × 19', 98),
+  catalogModel('V10 320 g', '16 × 19', 98),
+]
+const additionalFamilies: Record<string, Record<string, RacketModel[]>> = {
+  Mizuno: {
+    F: [catalogModel('F97', '16 × 19', 97), catalogModel('F100', '16 × 19', 100)],
+    'F Tour': [catalogModel('285', '16 × 19', 100), catalogModel('300', '16 × 19', 100)],
+  },
+  Volkl: {
+    Vostra: volklModernModels(),
+    'V-Cell': volklModernModels().filter(model => !model.name.startsWith('V9')).map(model => ({ ...model, name: model.name.replace(/^V/, '') })),
+    C10: [catalogModel('Pro', '16 × 19', 98), catalogModel('Evo', '16 × 19', 98)],
+    'Power Bridge': [catalogModel('10 Mid', '16 × 19', 93)],
+  },
+}
+export const rackets: Record<string, Record<string, RacketModel[]>> = { ...Object.fromEntries(
   Object.entries(existingRackets).map(([brand, families]) => {
     const merged = { ...families }
     for (const [line, verified] of Object.entries(verifiedFamilies[brand] ?? {})) {
@@ -109,7 +140,7 @@ export const rackets: Record<string, Record<string, RacketModel[]>> = Object.fro
     }
     return [brand, merged]
   }),
-)
+), ...additionalFamilies }
 export function getPatterns(brand: string, line: string, model: string): string[] {
   return rackets[brand]?.[line]?.find(entry => entry.name === model)?.patterns ?? []
 }
