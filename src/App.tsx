@@ -130,7 +130,7 @@ function App() {
     catch { setCopied(false); window.alert('Não foi possível copiar. Você pode selecionar o texto da página.') }
   }
   return <div className="shell">
-    <header><a className="brand" href="/" aria-label="String EZ, início"><svg className="ball" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle cx="18" cy="18" r="17" fill="var(--primary)" /><g transform="rotate(-25 18 18)" fill="none" stroke="var(--ball-seam)" strokeWidth="2"><path d="M4 8C17 10 17 26 4 28" /><path d="M32 8C19 10 19 26 32 28" /></g></svg> string<span>ez</span><small>your strings tuned to your game.</small></a></header>
+    <header><a className="brand" href="/" aria-label="String EZ, início"><svg className="ball" viewBox="0 0 36 36" aria-hidden="true" focusable="false"><circle cx="18" cy="18" r="17" fill="var(--primary)" /><g transform="rotate(-25 18 18)" fill="none" stroke="var(--ball-seam)" strokeWidth="2"><path d="M4 8C17 10 17 26 4 28" /><path d="M32 8C19 10 19 26 32 28" /></g></svg> string<span>ez</span><small>your strings tuned to your game.</small></a><span className="creator-credit">Vibecoded by João Boccoli</span></header>
     <main>
       {step === -1 ? <section className="welcome">
         <div className="intro"><h1 ref={heading} tabIndex={-1}>Menos dúvida.<br /><em>Mais jogo.</em></h1><p className="lead">Conte como você joga, o que gosta nas suas cordas e o que quer melhorar. Em instantes, vamos te recomendar 3 configurações de encordoamento.</p><ThemePicker selected={theme} onSelect={setTheme} /><button className="primary" onClick={() => move(0)}>Encontrar minhas cordas <span>↗</span></button></div>
@@ -169,7 +169,7 @@ function App() {
         <p className="micro">Suas respostas ficam apenas nesta sessão. Nenhum dado é enviado.</p>
       </section>}
     </main>
-    <footer><span>STRING EZ © {currentYear}</span><span>Feito por João Boccoli.</span><span>Recomendações por regras · versão inicial</span></footer>
+    <footer><span>STRING EZ © {currentYear}</span><span>Recomendações por regras · versão inicial</span></footer>
   </div>
 }
 export default App

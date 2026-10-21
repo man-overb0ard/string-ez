@@ -12,7 +12,7 @@ export default function ThemePicker({ selected, onSelect }: { selected: ThemeId;
     container.scrollLeft = Math.max(0, offset - (container.clientWidth - active.clientWidth) / 2)
   }, [selected])
   return <section className="theme-picker" aria-labelledby="theme-picker-title">
-    <div className="theme-picker-heading"><span id="theme-picker-title">Escolha o tema do site de acordo com os outfits</span><span className="theme-picker-hint"><span className="outfit-desktop-hint">Um toque, outro clima.</span><span className="outfit-mobile-hint">Deslize para ver os {themes.length} →</span></span></div>
+    <div className="theme-picker-heading"><span id="theme-picker-title">Escolha a vibe do app de acordo com os outfits históricos!</span><span className="theme-picker-hint"><span className="outfit-desktop-hint">Um toque, outro clima.</span><span className="outfit-mobile-hint">Deslize para ver os {themes.length} →</span></span></div>
     <div ref={optionsRef} className="theme-options" role="group" aria-label="Tema inspirado no outfit do tenista">
       {themes.map(theme => <button type="button" className="theme-option" key={theme.id}
         aria-label={`Tema ${theme.name}`} aria-pressed={selected === theme.id} title={`${theme.fullName} · ${theme.outfit}`}
