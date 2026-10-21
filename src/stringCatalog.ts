@@ -19,6 +19,8 @@ export const stringCatalog: Record<string, CatalogString[]> = {
   Kirschbaum: [poly('Pro Line II'), poly('Max Power'), poly('Super Smash Orange'), poly('Black Shark')],
   MSV: [poly('Focus Hex'), poly('Focus Hex Soft'), poly('Co-Focus')],
   Dunlop: [poly('Black Widow'), poly('Explosive Bite'), poly('Explosive Speed'), multi('Iconic All'), multi('Iconic Touch')],
+  Toroline: [poly('Caviar'), poly('Enso Pro'), poly('O-Toro'), poly('Super Toro'), poly('Toro Toro'), poly('Wasabi'), poly('Wasabi X')],
+  ReString: [poly('Zero'), poly('Sync')],
   Tourna: [poly('Big Hitter Silver'), poly('Big Hitter Blue'), poly('Big Hitter Black 7')],
 }
 export function findString(brand: string, model: string): CatalogString | undefined {
