@@ -180,3 +180,11 @@ As duas direções do híbrido são avaliadas independentemente e o full bed usa
 ## Preservar e melhorar sem sobreposição
 
 A etapa de melhorias usa `availableImprovementFactors`: fatores marcados para preservar ficam ocultos em vez de desabilitados. “Preço” corresponde a “Reduzir o custo”; cor e formato não retiram objetivos sem relação, e “Nada em especial” deixa todos disponíveis. Ao voltar e alterar os pontos a preservar, `reconcileImprovementGoals` remove somente melhorias que passaram a conflitar. Desmarcar uma preferência torna a melhoria disponível novamente, sem selecioná-la automaticamente. Os limites seguem três pontos a preservar e dois objetivos. O fluxo no navegador cobre ocultação, limpeza ao voltar, contagem de seleção, reaparecimento e geração das três recomendações.
+
+## Gerar novas três opções
+
+Na tela final, “Gerar novas 3 opções” mantém as respostas e apresenta o próximo conjunto, sem repetir configurações já exibidas nessa sequência. A ordenação continua seguindo a pontuação; cada conjunto mantém full bed para iniciantes, tripa natural somente para quem já informou uso e custo-benefício identificado na opção 03. Uma mesma corda pode participar de configurações diferentes, por exemplo full bed e híbrido.
+
+`recommend` aceita uma lista opcional de IDs a excluir. Antes de apresentar a próxima rodada, verifica se há três candidatas distintas e uma opção econômica. Na última rodada possível, reserva a candidata econômica para a terceira posição. Quando não há um conjunto completo elegível, o botão é desabilitado, o motivo é exibido e as opções atuais permanecem disponíveis. Revisar respostas ou começar de novo limpa o histórico. Histórico e respostas ficam somente na memória da sessão.
+
+O botão de copiar usa sempre o conjunto visível e seu estado de confirmação é reiniciado ao gerar alternativas. A nova rodada é anunciada, recebe foco no título e retorna ao topo. Testes cobrem exclusão acumulada, esgotamento, reserva econômica, regras por perfil, respostas preservadas e conteúdo da área de transferência no navegador.

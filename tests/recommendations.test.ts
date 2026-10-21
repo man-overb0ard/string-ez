@@ -665,3 +665,50 @@ describe('amarração entre preservar e melhorar', () => {
     assert.deepEqual(reconcileImprovementGoals(['Reduzir o custo'], ['Preço']), [])
   })
 })
+
+describe('novos conjuntos de recomendações sem refazer respostas', () => {
+  it('retorna os próximos candidatos sem repetir configurações já apresentadas', () => {
+    const first = recommend(base)
+    const excluded = first.map(r=>r.id)
+    const next = recommend(base, excluded)
+    assert.equal(next.length,3)
+    assert.ok(next.every(r=>!excluded.includes(r.id)))
+    assert.deepEqual(next.map(r=>r.isValueOption),[false,false,true])
+    assert.deepEqual(recommend(base),first)
+    assert.deepEqual(excluded,first.map(r=>r.id))
+  })
+  it('mantém nível, tripa natural e custo-benefício em todas as rodadas e encerra sem loop', () => {
+    for(const level of ['Iniciante','Intermediário'])for(const previous of ['Poliéster','Tripa natural']){
+      const answers={...base,level,previous,goals:['Controle','Spin']}
+      const seen: string[]=[]
+      let rounds=0
+      while(rounds<=recommendationSetups.length){
+        const result=recommend(answers,seen)
+        if(!result.length)break
+        assert.equal(result.length,3)
+        assert.ok(result.every(r=>!seen.includes(r.id)))
+        assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
+        assert.ok(result[2].scores.Preço>=4)
+        if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'))
+        if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
+        seen.push(...result.map(r=>r.id));rounds++
+      }
+      assert.ok(rounds>1 && rounds<=Math.floor(recommendationSetups.length/3))
+      assert.deepEqual(recommend(answers,seen),[])
+    }
+  })
+  it('reserva a última configuração econômica para a terceira posição', () => {
+    const keep=new Set(['nylon','xone','ptp'])
+    const excluded=recommendationSetups.filter(s=>!keep.has(s.id)).map(s=>s.id)
+    const result=recommend({...base,goals:['Reduzir o custo']},excluded)
+    assert.equal(result.length,3)
+    assert.equal(result[2].id,'nylon')
+    assert.equal(new Set(result.map(r=>r.id)).size,3)
+  })
+  it('não retorna conjunto parcial ou sem opção econômica quando o catálogo se esgota', () => {
+    for(const keep of [new Set(['nylon','ptp']),new Set(['xone','ptp','hyperg']),new Set<string>()]){
+      const excluded=recommendationSetups.filter(s=>!keep.has(s.id)).map(s=>s.id)
+      assert.deepEqual(recommend(base,excluded),[])
+    }
+  })
+})

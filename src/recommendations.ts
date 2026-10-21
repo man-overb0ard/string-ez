@@ -55,7 +55,8 @@ function parseTension(value: string | undefined): number | null {
   const n = Number.parseInt(value, 10)
   return n >= MIN_TENSION && n <= MAX_TENSION ? n : null
 }
-export function recommend(a: Answers): Recommendation[] {
+export function recommend(a: Answers, excludedIds: readonly string[] = []): Recommendation[] {
+  const excluded = new Set(excludedIds)
   const shot = shotStyleProfile(a.shotStyle)
   if (a.shotStyle !== undefined && !shot) return []
   const frequency = weeklyPlayProfile(a.weeklyHours)
@@ -93,7 +94,7 @@ export function recommend(a: Answers): Recommendation[] {
   }
   const candidates = recommendationSetups
   const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
-  const eligible = candidates.filter(s =>
+  const eligible = candidates.filter(s => !excluded.has(s.id) &&
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
     (!fullBedOnly || s.layout === 'Full bed')
   )
@@ -102,10 +103,18 @@ export function recommend(a: Answers): Recommendation[] {
     ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
     : stringCostBand(currentMains, a.previousBrand, a.previousModel)
   const setupCost = (setup: Setup) => (stringCostBand(setup.mains.material, setup.mains.brand, setup.mains.model) + stringCostBand(setup.crosses.material, setup.crosses.brand, setup.crosses.model)) / 2
-  // As duas primeiras são as mais bem pontuadas, sem alternância obrigatória.
-  const first = ranked[0].setup
-  const second = ranked[1].setup
-  const valueOption = ranked.find(({ setup }) => setup.scores.Preço >= 4 && setup.id !== first.id && setup.id !== second.id)!.setup
+  if (ranked.length < 3) return []
+  let first = ranked[0].setup
+  let second = ranked[1].setup
+  let valueOption = ranked.find(({ setup }) => setup.scores.Preço >= 4 && setup.id !== first.id && setup.id !== second.id)?.setup
+  // Na última rodada, reserva a opção econômica antes de escolher as outras duas.
+  if (!valueOption) {
+    valueOption = ranked.find(({ setup }) => setup.scores.Preço >= 4)?.setup
+    if (!valueOption) return []
+    const remaining = ranked.filter(({ setup }) => setup.id !== valueOption!.id)
+    first = remaining[0].setup
+    second = remaining[1].setup
+  }
   const selected = [first, second, valueOption]
   return selected.map(candidate => {
     const gaugeContext = { goals, liked, weeklyHours: a.weeklyHours, pattern: a.pattern, headSize }

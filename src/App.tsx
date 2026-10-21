@@ -45,6 +45,7 @@ function App() {
   const [step, setStep] = useState(-1)
   const [answers, setAnswers] = useState<Answers>(initial)
   const [copied, setCopied] = useState(false)
+  const [excludedSetups, setExcludedSetups] = useState<string[]>([])
   const heading = useRef<HTMLHeadingElement>(null)
   const patterns = getPatterns(answers.brand, answers.line, answers.racket)
   const resolvedPattern = patterns.length === 1 ? patterns[0] : answers.pattern
@@ -98,7 +99,17 @@ function App() {
   const direction = q?.key.startsWith('mains') ? 'mains' : q?.key.startsWith('crosses') ? 'crosses' : null
   const materialFor = (slot: StringSlot) => resolveStringMaterial(answers[slot], answers[`${slot}Brand`], answers[`${slot}Model`])
   const racketSummary = racketLabel(answers.brand, answers.line, answers.racket)
-  const recommendations = result ? recommend({ ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), racket: racketSummary, headSize: getHeadSize(answers.brand, answers.line, answers.racket), pattern: resolvedPattern }) : []
+  const recommendationAnswers = { ...answers, previous: materialFor('previous'), mains: materialFor('mains'), crosses: materialFor('crosses'), racket: racketSummary, headSize: getHeadSize(answers.brand, answers.line, answers.racket), pattern: resolvedPattern }
+  const recommendations = result ? recommend(recommendationAnswers, excludedSetups) : []
+  const nextExcludedSetups = [...excludedSetups, ...recommendations.map(r => r.id)]
+  const hasMoreRecommendations = result && recommendations.length === 3 && recommend(recommendationAnswers, nextExcludedSetups).length === 3
+  function regenerate() {
+    if (!hasMoreRecommendations) return
+    setExcludedSetups(nextExcludedSetups)
+    setCopied(false)
+    requestAnimationFrame(() => { heading.current?.focus(); window.scrollTo({ top: 0, behavior: 'instant' }) })
+  }
+
   const answerText = (key: keyof Answers) => {
     if (key === 'liked') return answers.liked.map(value => value === colorPreference ? `${value}: ${answers.preferredColor}` : value === shapePreference ? `${value}: ${answers.preferredShape}` : value).join(', ')
     if (key === 'goals' || key === 'painDetails') return answers[key].join(', ')
@@ -106,6 +117,7 @@ function App() {
     return typeof answers[key] === 'string' ? materialLabel(answers[key]) : answers[key]
   }
   function move(next: number) {
+    setExcludedSetups([])
     setStep(next)
     setCopied(false)
     requestAnimationFrame(() => { heading.current?.focus(); window.scrollTo({ top: 0, behavior: 'instant' }) })
@@ -156,10 +168,12 @@ function App() {
         <details><summary>Conferir minhas respostas</summary><dl><div><dt>Padrão de cordas</dt><dd>{resolvedPattern}</dd></div>{questions.filter(item => item.key !== 'pattern').map(item => <div key={item.key}><dt>{item.title}</dt><dd>{answerText(item.key)}</dd></div>)}</dl></details>
         {answers.pain === 'Sim' && <p className="notice"><b>Desconfortos informados: {answers.painDetails.join(' · ')}.</b> Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões. As opções podem incluir poliéster em tensão reduzida; isso não garante conforto nem ausência de dor.</p>}
         <p className="notice"><b>Antes de encordoar:</b> as tensões abaixo são pontos de teste, não uma faixa validada para sua raquete. Confirme cada valor com o encordoador e com a indicação do fabricante. Os modelos de corda fazem parte de um catálogo inicial; preço e disponibilidade não são consultados em tempo real.</p>
+        {excludedSetups.length > 0 && <p className="micro" role="status">Conjunto {excludedSetups.length / 3 + 1} · Novas alternativas com as mesmas respostas.</p>}
         <div className="cards">{recommendations.map((r, i) => <RecommendationCard key={r.id} recommendation={r} index={i} />)}</div>
         {recommendations.length !== 3 && <p role="alert">Não foi possível gerar as três opções. Revise as tensões do encordoamento atual.</p>}
         <div className="notice"><b>Como comparar na quadra</b><p>Registre a configuração escolhida e observe conforto, profundidade, controle e desgaste. Ao experimentar, prefira uma mudança por vez quando possível. Uma sugestão híbrida é uma alternativa para testar, não uma garantia de melhora.</p></div>
-        <div className="actions"><button className="primary" onClick={copy}>{copied ? 'Resumo copiado ✓' : 'Copiar para o encordoador ↗'}</button><button className="secondary" onClick={() => move(0)}>Rever respostas</button><button className="secondary" onClick={() => { setAnswers(initial); move(-1) }}>Começar de novo</button></div>
+        <div className="actions"><button className="primary" onClick={copy}>{copied ? 'Resumo copiado ✓' : 'Copiar para o encordoador ↗'}</button><button className="secondary" onClick={regenerate} disabled={!hasMoreRecommendations}>Gerar novas 3 opções</button><button className="secondary" onClick={() => move(0)}>Rever respostas</button><button className="secondary" onClick={() => { setAnswers(initial); move(-1) }}>Começar de novo</button></div>
+        {recommendations.length === 3 && !hasMoreRecommendations && <p className="micro" role="status">Não há mais três configurações inéditas que atendam às suas respostas e incluam uma opção de custo-benefício. Você pode copiar estas opções ou rever suas respostas.</p>}
       </section> : <section className="quiz">
         <div className="quiz-top"><span className="eyebrow">SEU PERFIL EM QUADRA</span><span>{step + 1} / {questions.length}</span></div>
         <progress aria-label="Progresso do questionário" value={step + 1} max={questions.length} />
