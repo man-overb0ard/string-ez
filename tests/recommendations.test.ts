@@ -426,3 +426,34 @@ describe('pocketing', () => {
     }
   })
 })
+
+describe('tripa natural somente para quem já usa', () => {
+  const hasGut = (r: ReturnType<typeof recommend>[number]) => [r.mains, r.crosses].some(s => s.material === 'Tripa natural')
+  it('exclui tripa natural em qualquer direção sem perder três opções e custo-benefício', () => {
+    for (const previous of ['Poliéster','Multifilamento','Synthetic gut (nylon)'])
+      for (const level of ['Iniciante','Intermediário','Avançado'])
+        for (const pain of ['Sim','Não'])
+          for (const goal of improvementFactors) {
+            const result = recommend({ ...base, previous, level, pain, goals: [goal] })
+            assert.equal(result.length,3)
+            assert.equal(new Set(result.map(r=>r.id)).size,3)
+            assert.ok(result.every(r=>!hasGut(r)))
+            assert.equal(result.filter(r=>r.isValueOption).length,1)
+          }
+  })
+  it('mantém tripa natural elegível em full bed ou em qualquer direção do híbrido atual', () => {
+    const profiles: Answers[] = [
+      { ...base, previous:'Tripa natural', goals:['Conforto','Potência'] },
+      { ...base, layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsTension:'52 lb', crossesTension:'48 lb', goals:['Conforto','Potência'] },
+      { ...base, layout:'Híbrido', mains:'Poliéster', crosses:'Tripa natural', mainsTension:'48 lb', crossesTension:'52 lb', goals:['Conforto','Potência'] },
+    ]
+    for (const profile of profiles) assert.ok(recommend(profile).some(hasGut))
+  })
+  it('usa apenas o setup ativo e não permite que cor, formato ou snapback contornem o filtro', () => {
+    const hybrid = recommend({ ...base, previous:'Tripa natural', layout:'Híbrido', mains:'Multifilamento', crosses:'Synthetic gut (nylon)', mainsTension:'50 lb', crossesTension:'48 lb', goals:['Pocketing','Snapback'], liked:['Cor da corda','Formato (Redondo, Hexagonal, etc.)'], preferredColor:'Natural', preferredShape:'Redondo' })
+    assert.equal(hybrid.length,3)
+    assert.ok(hybrid.every(r=>!hasGut(r)))
+    const full = recommend({ ...base, mains:'Tripa natural', crosses:'Tripa natural', goals:['Pocketing','Snapback'] })
+    assert.ok(full.every(r=>!hasGut(r)))
+  })
+})

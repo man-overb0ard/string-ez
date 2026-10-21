@@ -126,3 +126,5 @@ O retrato do criador acima do crédito no cabeçalho é um easter egg: clique pa
 O wordmark `string-ez` usa Sora variável servida localmente (`src/assets/fonts`), com “string” em peso 800 e “-ez” em 400. A licença OFL acompanha o arquivo. O logo não tem subtítulo.
 
 “Pocketing” também está nos dois questionários, explicado como a sensação de a bola afundar e ser abraçada pelas cordas no impacto. Recebe uma classificação independente por combinação (1–5), ponderada como os demais fatores, sem ajuste de tensão próprio. Os resultados explicitam potencial ou concessão; não há medição de tempo de contato ou garantia da sensação. Os limites continuam em três pontos a preservar e dois objetivos.
+
+Tripa natural só entra nas recomendações quando o setup atual já contém esse material: full bed de tripa ou ao menos uma direção do híbrido. O filtro exclui tanto Touch VS em full bed quanto híbridos com tripa para os demais usuários, antes da ordenação por objetivos/cor/formato. Dados de uma configuração anterior inativa não liberam tripa. Mantêm-se três opções e uma de custo-benefício.

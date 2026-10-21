@@ -84,7 +84,11 @@ export function recommend(a: Answers): Recommendation[] {
   }
   const lynx = { brand: 'HEAD', model: 'Lynx Tour', material: 'Poliéster', gauge: '1,25 mm' }
   const candidates: Setup[] = shape === 'Hexagonal' || color === 'Laranja' || color === 'Cinza' ? [...setups, { id: 'lynx-tour', title: 'Controle com perfil hexagonal', layout: 'Full bed', mains: lynx, crosses: lynx, scores: scores(2,5,2,5,4,3,2,4,2), benefit: 'Copoliéster hexagonal para explorar controle e efeito com swing completo.', tradeoff: 'O formato não garante mais spin; continua sendo poliéster e exige acompanhar conforto e perda de resposta.' }] : setups
-  const eligible = candidates.filter(s => !softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
+  const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
+  const eligible = candidates.filter(s =>
+    (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
+    (!softOnly || (s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
+  )
   const ranked = eligible.map(setup => ({ setup, score: appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (setup.layout === currentLayout ? 1 : 0) + (setup.mains.material === currentMains ? 0.5 : 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   // Com desconforto, manter pelo menos duas alternativas sem poliéster.
   const selected: Setup[] = []
