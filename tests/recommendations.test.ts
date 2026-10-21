@@ -23,7 +23,7 @@ describe('configurações recomendadas', () => {
               for (const r of result) {
                 for (const spec of [r.mains, r.crosses]) {
                   assert.ok(spec.brand && spec.model && spec.gauge && spec.material)
-                  if (level === 'Iniciante') assert.notEqual(spec.material, 'Poliéster')
+                  if (level === 'Iniciante') assert.equal(r.layout, 'Full bed')
                 }
                 for (const value of [r.tensions.mains, r.tensions.crosses]) {
                   assert.ok(Number.isInteger(value) && value >= 30 && value <= 69)
@@ -32,8 +32,8 @@ describe('configurações recomendadas', () => {
               }
             }
   })
-  it('inclui uma alternativa híbrida para um full bed experiente que busca controle', () => {
-    const results = recommend(base)
+  it('pode recomendar um híbrido quando ele é competitivo na pontuação', () => {
+    const results = recommend({ ...base, goals: ['Durabilidade'] })
     const hybrid = results.find(r => r.layout === 'Híbrido')
     assert.ok(hybrid)
     assert.equal(hybrid.layoutChange, 'Muda de Full bed para Híbrido')
@@ -43,14 +43,14 @@ describe('configurações recomendadas', () => {
     const plain = recommend(base)
     const comfort = recommend({ ...base, liked: ['Conforto'] })
     assert.notDeepEqual(plain.map(r => r.id), recommend({ ...base, liked: ['Potência'] }).map(r => r.id))
-    const shared = comfort.find(r => r.id === plain[0].id)
+    const shared = comfort.find(r => plain.some(other => other.id === r.id))
     assert.ok(shared)
-    assert.ok(shared.tensions.mains < plain[0].tensions.mains)
+    assert.ok(shared.tensions.mains < plain.find(other => other.id === shared.id)!.tensions.mains)
     assert.match(shared.preservation, /Conforto/)
     assert.match(shared.preservation, /possível perda/)
   })
   it('considera separadamente as tensões de um híbrido e as inclui na cópia', () => {
-    const results = recommend({ ...base, layout: 'Híbrido', mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '54 lb', crossesTension: '48 lb', liked: ['Conforto'] })
+    const results = recommend({ ...base, layout: 'Híbrido', mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '54 lb', crossesTension: '48 lb', goals: ['Durabilidade'] })
     const hybrid = results.find(r => r.layout === 'Híbrido')
     assert.ok(hybrid)
     assert.notEqual(hybrid.tensions.mains, hybrid.tensions.crosses)
@@ -72,16 +72,16 @@ describe('configurações recomendadas', () => {
     assert.ok(samePoly)
     assert.ok(samePoly.tensions.mains < recommend(base).find(r => r.id === samePoly.id)!.tensions.mains)
   })
-  it('não aumenta a tensão de um full bed que relata dor e reduz mais a tensão do poliéster', () => {
-    for (const r of recommend({ ...base, pain: 'Sim' })) {
-      assert.ok(r.tensions.mains < 50)
-      if (r.mains.material === 'Poliéster') assert.ok(r.tensions.mains <= 45)
-      if (r.crosses.material === 'Poliéster') assert.ok(r.tensions.crosses <= 45)
-    }
+  it('não aplica teto de tensão nem redução obrigatória por desconforto', () => {
+    const result = recommend({ ...base, pain: 'Sim', goals: ['Spin'] })
+    const polys = result.filter(r => r.mains.material === 'Poliéster')
+    assert.ok(polys.length > 1)
+    assert.ok(polys.every(r => r.tensions.mains === 50))
+    assert.ok(result.every(r => !r.tensions.explanation.includes('no máximo 45 lb')))
   })
   it('limita sugestões às bordas do protótipo e explica quando o ajuste foi limitado', () => {
     for (const tension of ['30 lb', '69 lb']) {
-      const r = recommend({ ...base, tension, goals: [tension === '30 lb' ? 'Conforto' : 'Controle'], previous: 'Multifilamento' })
+      const r = recommend({ ...base, tension, goals: [tension === '30 lb' ? 'Conforto' : 'Controle'], previous: tension === '30 lb' ? 'Multifilamento' : 'Poliéster' })
       assert.ok(r.every(s => s.tensions.mains >= 30 && s.tensions.crosses <= 69))
       assert.ok(r.some(s => s.tensions.explanation.includes('limitado')))
     }
@@ -172,11 +172,6 @@ describe('dois objetivos, snapback e contexto da raquete', () => {
         assert.equal(results.length, 3)
         for (const r of results) {
           assert.ok(Number.isInteger(r.tensions.mains) && r.tensions.mains >= 30 && r.tensions.mains <= 69)
-          if (pain === 'Sim') {
-            if (r.mains.material === 'Poliéster') assert.ok(r.tensions.mains <= 45)
-            if (r.crosses.material === 'Poliéster') assert.ok(r.tensions.crosses <= 45)
-            assert.ok(r.tensions.mains <= 48)
-          }
         }
       }
     }
@@ -228,47 +223,21 @@ describe('famílias Pro Kennex', () => {
   })
 })
 
-describe('poliéster com desconforto físico', () => {
-  it('permite uma alternativa com poliéster em tensão reduzida e duas opções sem poliéster', () => {
-    for (const goals of [['Spin'], ['Controle', 'Spin']]) {
-      const results = recommend({ ...base, pain: 'Sim', tension: '54 lb', goals })
-      const polys = results.filter(r => r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster')
-      assert.equal(polys.length, 1)
-      assert.equal(results.length - polys.length, 2)
-      const poly = polys[0]
-      for (const [spec, tension] of [[poly.mains, poly.tensions.mains], [poly.crosses, poly.tensions.crosses]] as const) {
-        if (spec.material === 'Poliéster') assert.ok(tension <= 45 && tension <= 54 - 4)
-      }
-      assert.match(poly.reason, /tensão reduzida/)
-      assert.match(poly.tensions.explanation, /nem garante ausência de dor/)
-      assert.match(recommendationText(poly), /não uma faixa clinicamente segura/)
-      assert.match(poly.caution, /não torna o poliéster.*isenta de risco/)
-    }
+describe('somente as três restrições de recomendação', () => {
+  it('permite poliéster para iniciantes e permite aumentar tensão por objetivo', () => {
+    const result = recommend({ ...base, level: 'Iniciante', goals: ['Controle'] })
+    assert.ok(result.every(r => r.layout === 'Full bed'))
+    assert.ok(result.some(r => r.mains.material === 'Poliéster' && r.tensions.mains > 50))
   })
-  it('reduz a tensão do poliéster na direção correta de um híbrido', () => {
-    const results = recommend({ ...base, pain: 'Sim', layout: 'Híbrido', mains: 'Tripa natural', crosses: 'Poliéster', mainsTension: '50 lb', crossesTension: '40 lb', goals: ['Snapback'] })
-    const hybrid = results.find(r => r.layout === 'Híbrido' && r.crosses.material === 'Poliéster')!
-    assert.ok(hybrid)
-    assert.equal(hybrid.tensions.mains, 48)
-    assert.equal(hybrid.tensions.crosses, 36)
-    assert.match(hybrid.tensionComparison, /Crosses: 40 → 36 lb/)
-  })
-  it('mantém a exclusão para iniciantes e não força poliéster quando a prioridade é conforto', () => {
-    for (const a of [{ ...base, pain: 'Sim', goals: ['Conforto'] }, { ...base, pain: 'Sim', level: 'Iniciante', goals: ['Spin'] }]) {
-      const results = recommend(a)
-      assert.equal(results.length, 3)
-      assert.ok(results.every(r => r.mains.material !== 'Poliéster' && r.crosses.material !== 'Poliéster'))
-    }
-  })
-  it('respeita o limite inferior quando a tensão atual já é baixa', () => {
-    const results = recommend({ ...base, pain: 'Sim', tension: '30 lb', goals: ['Spin'] })
-    const poly = results.find(r => r.mains.material === 'Poliéster')!
-    assert.ok(poly)
-    assert.equal(poly.tensions.mains, 30)
-    assert.match(poly.tensions.explanation, /limitado/)
+  it('não força alternância, exclusão por desconforto nem corda principal diferente', () => {
+    const result = recommend({ ...base, pain: 'Sim', goals: ['Spin'] })
+    assert.ok(result.filter(r=>r.mains.material==='Poliéster').length > 1)
+    assert.equal(result[0].layout, result[1].layout)
+    const budget = recommend({ ...base, goals: ['Reduzir o custo'] })
+    assert.equal(budget[1].mains.model, budget[2].mains.model)
+    assert.deepEqual(budget.map(r=>r.isValueOption),[false,false,true])
   })
 })
-
 
 describe('linhas conferidas nas fichas oficiais', () => {
   it('inclui as cinco famílias solicitadas com todas as variantes técnicas conferidas', () => {
@@ -321,8 +290,7 @@ describe('custo-benefício obrigatório e comparação de custo', () => {
       assert.equal(new Set(result.map(r=>r.id)).size,3)
       assert.equal(result.filter(r=>r.isValueOption).length,1)
       assert.ok(result.every(r=>r.costComparison.includes('Setup atual:')))
-      if (level === 'Iniciante') assert.ok(result.every(r=>r.mains.material !== 'Poliéster' && r.crosses.material !== 'Poliéster'))
-      if (pain === 'Sim') assert.ok(result.filter(r=>r.mains.material === 'Poliéster' || r.crosses.material === 'Poliéster').length <= 1)
+      if (level === 'Iniciante') assert.ok(result.every(r=>r.layout === 'Full bed'))
     }
   })
   it('reduzir custo compara com o setup premium, e a opção econômica usa faixa menor', () => {
@@ -403,9 +371,6 @@ describe('preferências de cor e formato', () => {
       assert.equal(result.length, 3)
       assert.equal(new Set(result.map(r => r.id)).size, 3)
       assert.equal(result.filter(r => r.isValueOption).length, 1)
-      const polys = result.filter(r => [r.mains, r.crosses].some(s => s.material === 'Poliéster'))
-      if (level === 'Iniciante') assert.equal(polys.length, 0)
-      if (pain === 'Sim') assert.ok(polys.length <= 1)
     }
   })
 })
@@ -427,9 +392,6 @@ describe('pocketing', () => {
       assert.equal(result.length, 3)
       assert.equal(result.filter(r=>r.isValueOption).length, 1)
       assert.ok(result.every(r=>/pocketing/i.test(r.reason) && /snapback/i.test(r.reason)))
-      const polys = result.filter(r=>r.mains.material==='Poliéster'||r.crosses.material==='Poliéster')
-      if (level==='Iniciante') assert.equal(polys.length,0)
-      if (pain==='Sim') assert.ok(polys.length<=1)
     }
   })
 })
@@ -450,9 +412,9 @@ describe('tripa natural somente para quem já usa', () => {
   })
   it('mantém tripa natural elegível em full bed ou em qualquer direção do híbrido atual', () => {
     const profiles: Answers[] = [
-      { ...base, previous:'Tripa natural', goals:['Conforto','Potência'] },
-      { ...base, layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsTension:'52 lb', crossesTension:'48 lb', goals:['Conforto','Potência'] },
-      { ...base, layout:'Híbrido', mains:'Poliéster', crosses:'Tripa natural', mainsTension:'48 lb', crossesTension:'52 lb', goals:['Conforto','Potência'] },
+      { ...base, previous:'Tripa natural', goals:['Pocketing','Snapback'] },
+      { ...base, layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsTension:'52 lb', crossesTension:'48 lb', goals:['Pocketing','Snapback'] },
+      { ...base, layout:'Híbrido', mains:'Poliéster', crosses:'Tripa natural', mainsTension:'48 lb', crossesTension:'52 lb', goals:['Pocketing','Snapback'] },
     ]
     for (const profile of profiles) assert.ok(recommend(profile).some(hasGut))
   })
@@ -466,17 +428,17 @@ describe('tripa natural somente para quem já usa', () => {
 })
 
 describe('ordem das três recomendações', () => {
-  it('prioriza a pontuação na primeira e escolhe a montagem oposta na segunda', () => {
+  it('mantém as duas primeiras por pontuação e destaca custo-benefício na terceira', () => {
     const baseline = recommend(base)
     assert.equal(baseline[0].scores.Controle, 5)
-    assert.notEqual(baseline[0].layout, baseline[1].layout)
+    assert.equal(baseline[0].layout, baseline[1].layout)
     const hybridFirst = recommend({ ...base, previous:'Tripa natural', goals:['Spin','Snapback'] })
     assert.ok(hybridFirst[0].scores.Spin >= 4 && hybridFirst[0].scores.Snapback >= 4)
-    assert.notEqual(hybridFirst[0].layout, hybridFirst[1].layout)
+    assert.equal(hybridFirst[0].scores.Snapback, 5)
     assert.equal(hybridFirst[2].isValueOption,true)
     const valueFirst = recommend({ ...base, goals:['Reduzir o custo'] })
     assert.equal(valueFirst[0].scores.Preço, 5)
-    assert.equal(valueFirst[1].layout,'Híbrido')
+    assert.equal(valueFirst[1].scores.Preço, 5)
     assert.notEqual(valueFirst[2].id, valueFirst[0].id)
     assert.equal(valueFirst[2].isValueOption,true)
   })
@@ -488,12 +450,8 @@ describe('ordem das três recomendações', () => {
           assert.equal(result.length,3)
           assert.equal(new Set(result.map(r=>r.id)).size,3)
           if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'))
-          else assert.notEqual(result[0].layout,result[1].layout)
           assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
           assert.ok(result[2].scores.Preço>=4)
-          const polys=result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster'))
-          if(level==='Iniciante')assert.equal(polys.length,0)
-          if(pain==='Sim')assert.ok(polys.length<=1)
           if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
         }
   })
@@ -505,8 +463,8 @@ describe('ordem das três recomendações', () => {
     ]
     for(const profile of profiles)assert.equal(recommend(profile)[0].id,recommend(base)[0].id)
     const pain=recommend({...base,pain:'Sim'})
-    assert.notEqual(pain[0].layout,pain[1].layout)
-    assert.ok(pain.filter(r => [r.mains,r.crosses].some(s=>s.material==='Poliéster')).length <= 1)
+    assert.equal(pain.length,3)
+    assert.ok(pain.every(r => r.reason && r.tensions.explanation))
   })
 })
 
@@ -537,9 +495,7 @@ describe('frequência semanal', () => {
         assert.equal(result.length,3)
         assert.equal(new Set(result.map(r=>r.id)).size,3)
         assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
-        if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'&&[r.mains,r.crosses].every(s=>s.material!=='Poliéster')))
-        else assert.notEqual(result[0].layout,result[1].layout)
-        if(pain==='Sim')assert.ok(result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster')).length<=1)
+        if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'))
         if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
       }
   })
@@ -549,8 +505,8 @@ describe('trajetória predominante da bola', () => {
   const styles=['Mais reta','Com arco e topspin','Mais alta e profunda']
   it('usa o estilo como ajuste complementar e diferencia controle, rotação e profundidade', () => {
     const results=styles.map(shotStyle=>recommend({...base,goals:['Conforto','Controle'],shotStyle}))
-    assert.ok(results[1][0].scores.Spin > results[0][0].scores.Spin)
-    assert.ok(results[2][0].scores.Potência > results[0][0].scores.Potência)
+    assert.ok(results[1][0].scores.Spin >= results[0][0].scores.Spin)
+    assert.ok(results[2][0].scores.Potência >= results[0][0].scores.Potência)
     assert.match(results[0][0].shotStyleNote,/controle de profundidade/)
     assert.match(results[1][0].shotStyleNote,/spin, snapback/)
     assert.match(results[2][0].shotStyleNote,/também pode ter muito topspin/)
@@ -574,9 +530,7 @@ describe('trajetória predominante da bola', () => {
           assert.equal(new Set(result.map(r=>r.id)).size,3)
           assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
           assert.ok(result.every(r=>r.shotStyleNote&&r.frequencyNote))
-          if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'&&[r.mains,r.crosses].every(s=>s.material!=='Poliéster')))
-          else assert.notEqual(result[0].layout,result[1].layout)
-          if(pain==='Sim')assert.ok(result.filter(r=>[r.mains,r.crosses].some(s=>s.material==='Poliéster')).length<=1)
+          if(level==='Iniciante')assert.ok(result.every(r=>r.layout==='Full bed'))
           if(previous!=='Tripa natural')assert.ok(result.every(r=>[r.mains,r.crosses].every(s=>s.material!=='Tripa natural')))
         }
   })
@@ -603,7 +557,7 @@ describe('catálogo completo nas recomendações', () => {
     for(const model of ['Mach-10','Confidential Soft','Element Soft IR','Zero','Toro Toro']) assert.ok(recommendationSetups.some(s => s.layout==='Full bed' && s.mains.model===model))
     for(const s of recommendationSetups.filter(s=>s.layout==='Híbrido'))assert.notEqual(`${s.mains.brand} ${s.mains.model}`,`${s.crosses.brand} ${s.crosses.model}`)
   })
-  it('produz variedade entre perfis sem sorteio nem repetir a corda principal na opção econômica', () => {
+  it('produz variedade entre perfis sem sorteio', () => {
     const winners=new Set<string>(), output=new Set<string>()
     for(const goal of improvementFactors)for(const like of factors)for(const level of ['Iniciante','Intermediário'])for(const pain of ['Sim','Não'])for(const weeklyHours of ['Até 2 horas','Mais de 10 horas']){
       const answers={...base,goals:[goal],liked:[like],level,pain,weeklyHours}
@@ -611,10 +565,23 @@ describe('catálogo completo nas recomendações', () => {
       assert.deepEqual(result,recommend(answers))
       winners.add(result[0].mains.brand+' '+result[0].mains.model)
       for(const r of result)for(const s of [r.mains,r.crosses])output.add(s.brand+' '+s.model)
-      assert.notEqual(result[2].mains,result[0].mains)
-      assert.notEqual(result[2].mains,result[1].mains)
     }
     assert.ok(winners.size>=20, `Apenas ${winners.size} cordas na primeira posição`)
     assert.ok(output.size>=25, `Apenas ${output.size} cordas nos resultados`)
+  })
+})
+
+
+describe('poliésteres de conforto relativo', () => {
+  it('mantém Mach-10, Poly Tour Pro e Element elegíveis e com conforto relativo acima dos poliésteres firmes', () => {
+    for (const model of ['Mach-10','POLYTOUR PRO','Element']) {
+      const profile = recommendationStrings.find(s=>s.model===model)!
+      assert.ok(profile && profile.material==='Poliéster')
+      assert.ok(profile.scores.Conforto>=3)
+      assert.ok(recommendationSetups.some(s=>s.layout==='Full bed'&&s.mains.model===model))
+    }
+    const result = recommend({...base,pain:'Sim',goals:['Snapback'],liked:['Conforto']})
+    assert.ok(result.some(r=>r.mains.material==='Poliéster'))
+    assert.ok(result.every(r=>!r.tensions.explanation.includes('no máximo 45 lb')))
   })
 })

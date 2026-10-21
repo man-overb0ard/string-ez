@@ -6,8 +6,9 @@ export type StringProfile = StringSpec & { id: string; scores: Record<Factor, nu
 // Avaliações editoriais relativas (1–5), não medições de laboratório ou preços atuais.
 // Ordem: conforto, controle, potência, spin, durabilidade, preço, retenção, snapback, pocketing.
 // Cada linha é revisável por modelo; não inferimos desempenho a partir do nome da marca.
+// Revisão de conforto dos três modelos solicitados: docs/string-comfort-review.md.
 const ratings: Record<string, readonly number[]> = {
-  "Solinco Mach-10": [3, 4, 4, 5, 4, 3, 3, 5, 3],
+  "Solinco Mach-10": [3, 4, 4, 5, 4, 3, 3, 5, 4],
   "Solinco Hyper-G": [2, 5, 2, 5, 4, 3, 2, 4, 2],
   "Solinco Hyper-G Soft": [3, 4, 2, 5, 3, 3, 2, 4, 3],
   "Solinco Confidential": [2, 5, 2, 5, 5, 3, 3, 4, 2],
@@ -16,7 +17,7 @@ const ratings: Record<string, readonly number[]> = {
   "Solinco Tour Bite Soft": [2, 4, 2, 5, 3, 3, 2, 4, 3],
   "Solinco Outlast": [2, 4, 3, 4, 4, 3, 3, 5, 3],
   "Solinco Vanquish": [4, 3, 4, 2, 3, 4, 3, 2, 4],
-  "Yonex POLYTOUR PRO": [2, 5, 2, 4, 4, 3, 2, 5, 2],
+  "Yonex POLYTOUR PRO": [3, 5, 2, 4, 4, 3, 2, 5, 3],
   "Yonex POLYTOUR REV": [2, 4, 2, 5, 4, 3, 2, 4, 3],
   "Yonex POLYTOUR STRIKE": [2, 5, 2, 4, 5, 3, 3, 4, 3],
   "Yonex POLYTOUR FIRE": [2, 4, 2, 4, 4, 3, 2, 5, 3],

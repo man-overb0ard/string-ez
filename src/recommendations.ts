@@ -29,7 +29,7 @@ function fullBed(profile: StringProfile): Setup {
   const strengths = factors.filter(f => f !== 'Preço' && profile.scores[f] >= 4).join(', ').toLowerCase()
   return { id: profile.id, title: `${profile.brand} ${profile.model}`, layout: 'Full bed', mains: profile, crosses: profile, scores: profile.scores,
     benefit: `Neste perfil qualitativo, os pontos fortes são ${strengths || 'equilíbrio entre os fatores'}. ` + (poly ? 'Copoliéster para comparar controle, rotação e resposta no swing completo, conforme o perfil deste modelo.' : 'Uma configuração uniforme para explorar a resposta e a elasticidade deste modelo, conforme suas prioridades.'),
-    tradeoff: poly ? 'Continua sendo poliéster: acompanhe conforto e perda de resposta e troque mesmo sem romper quando necessário.' : profile.material === 'Tripa natural' ? 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.' : 'Pode se desgastar ou romper mais cedo com golpes rápidos e muito efeito; confirme calibre e custo local.' }
+    tradeoff: poly ? 'O conforto varia entre modelos, calibres e tensões. Uma tensão menor pode ser um ponto de teste com o encordoador; acompanhe perda de resposta e desgaste, mesmo sem rompimento.' : profile.material === 'Tripa natural' ? 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.' : 'Pode se desgastar ou romper mais cedo com golpes rápidos e muito efeito; confirme calibre e custo local.' }
 }
 function hybrid(main: StringProfile, cross: StringProfile): Setup {
   const hasPoly = main.material === 'Poliéster' || cross.material === 'Poliéster'
@@ -84,7 +84,7 @@ export function recommend(a: Answers): Recommendation[] {
   const spacing = density === undefined ? 'não classificado' : density >= 342 ? 'mais denso' : density <= 310 ? 'mais aberto' : 'intermediário'
   const racketContext = `${a.racket} · ${a.pattern}${headSize ? ` · cabeça de ${headSize} pol²` : ' · tamanho da cabeça não validado'}`
   const hasDiscomfort = a.pain === 'Sim'
-  const softOnly = a.level === 'Iniciante'
+  const fullBedOnly = a.level === 'Iniciante'
   const hasPoly = (setup: Setup) => setup.mains.material === 'Poliéster' || setup.crosses.material === 'Poliéster'
   const appearanceScore = (s: Setup) => {
     const main = stringAppearance(s.mains), cross = stringAppearance(s.crosses)
@@ -94,34 +94,24 @@ export function recommend(a: Answers): Recommendation[] {
   const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
   const eligible = candidates.filter(s =>
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
-    (!softOnly || (s.layout === 'Full bed' && s.mains.material !== 'Poliéster' && s.crosses.material !== 'Poliéster'))
+    (!fullBedOnly || s.layout === 'Full bed')
   )
-  const ranked = eligible.map(setup => ({ setup, score: (shot ? shot.control * setup.scores.Controle + shot.power * setup.scores.Potência + shot.spin * setup.scores.Spin + shot.snapback * setup.scores.Snapback + shot.durability * setup.scores.Durabilidade + shot.retention * setup.scores['Manutenção de tensão'] : 0) + (frequency ? frequency.retention * setup.scores['Manutenção de tensão'] + frequency.durability * setup.scores.Durabilidade + frequency.price * setup.scores.Preço : 0) + appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto - (hasPoly(setup) ? 4 : 0) : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  const ranked = eligible.map(setup => ({ setup, score: (shot ? shot.control * setup.scores.Controle + shot.power * setup.scores.Potência + shot.spin * setup.scores.Spin + shot.snapback * setup.scores.Snapback + shot.durability * setup.scores.Durabilidade + shot.retention * setup.scores['Manutenção de tensão'] : 0) + (frequency ? frequency.retention * setup.scores['Manutenção de tensão'] + frequency.durability * setup.scores.Durabilidade + frequency.price * setup.scores.Preço : 0) + appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
   const currentCost = currentLayout === 'Híbrido'
     ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
     : stringCostBand(currentMains, a.previousBrand, a.previousModel)
   const setupCost = (setup: Setup) => (stringCostBand(setup.mains.material, setup.mains.brand, setup.mains.model) + stringCostBand(setup.crosses.material, setup.crosses.brand, setup.crosses.model)) / 2
-  // A primeira posição é sempre o topo da ordenação, sem reserva de modalidade ou preço.
+  // As duas primeiras são as mais bem pontuadas, sem alternância obrigatória.
   const first = ranked[0].setup
-  // Iniciantes ficam em full bed; nos demais perfis, a segunda usa a modalidade oposta.
-  const second = softOnly ? undefined : ranked.find(({ setup }) => setup.layout !== first.layout &&
-    (!hasDiscomfort || !hasPoly(first) || !hasPoly(setup)))!.setup
-  const valueCandidates = ranked.filter(({ setup }) => setup.scores.Preço >= 4 &&
-    setup.id !== first.id && setup.id !== second?.id &&
-    (!hasDiscomfort || !hasPoly(setup) || (!hasPoly(first) && (!second || !hasPoly(second)))))
-  const differentMains = valueCandidates.filter(({ setup }) => setup.mains !== first.mains && setup.mains !== second?.mains)
-  const diverseValueCandidates = differentMains.length ? differentMains : valueCandidates
-  const lowerCost = diverseValueCandidates.filter(({ setup }) => setupCost(setup) < currentCost)
-  const valueOption = (hasGoal(reduceCost) && lowerCost.length ? lowerCost : diverseValueCandidates)[0].setup
-  // Reserva o custo-benefício antes de escolher a segunda opção do iniciante, para não repetir.
-  const alternate = second ?? ranked.find(({ setup }) => setup.id !== first.id && setup.id !== valueOption.id)!.setup
-  const selected = [first, alternate, valueOption]
+  const second = ranked[1].setup
+  const valueOption = ranked.find(({ setup }) => setup.scores.Preço >= 4 && setup.id !== first.id && setup.id !== second.id)!.setup
+  const selected = [first, second, valueOption]
   return selected.map(setup => {
     const notes = new Set<string>()
     notes.add(`Raquete considerada: ${racketContext}. A combinação de padrão e área da cabeça é uma referência aproximada de encordoamento ${spacing}; não mede o espaçamento real nem o ângulo de saída.`)
     if (!headSize) notes.add('Sem tamanho validado, o ajuste considera apenas a contagem de cordas; não atribui propriedades específicas à marca ou à linha.')
-    if (hasDiscomfort) notes.add('O desconforto dá mais peso ao conforto. O poliéster pode entrar como uma alternativa de tensão reduzida; reduzir tensão não elimina sua rigidez nem garante ausência de dor.')
-    else if (a.level === 'Iniciante') notes.add('Para iniciantes, a regra não aumenta a tensão nem inclui poliéster para perseguir desempenho.')
+    if (hasDiscomfort) notes.add('O desconforto informado dá mais peso ao conforto na pontuação, sem excluir materiais ou impor um teto de tensão. Poliésteres de resposta relativamente mais macia também são elegíveis; uma redução de tensão pode ser avaliada com o encordoador. A recomendação não garante ausência de dor.')
+    if (fullBedOnly) notes.add('Para iniciantes, as três opções são full bed, sem exclusão automática de materiais.')
     if (goals.length === 2) notes.add(`Objetivos combinados com o mesmo peso: ${goals.join(' e ')}. Ajustes de tensão em sentidos opostos são compensados, em vez de prometer melhorar tudo ao mesmo tempo.`)
     const tensionFor = (base: number, oldMaterial: string, spec: StringSpec) => {
       const goalDelta = (goal: ImprovementFactor) => goal === 'Controle' ? 2 : goal === 'Conforto' || goal === 'Potência' ? -2 : 0
@@ -136,13 +126,7 @@ export function recommend(a: Answers): Recommendation[] {
       if (a.pattern === '18 × 20' && (hasGoal('Conforto') || hasGoal('Potência'))) {
         delta -= 1; notes.add('O padrão 18 × 20 recebe um pequeno ajuste para buscar uma resposta menos firme.')
       }
-      if (a.pain === 'Sim') delta = Math.min(delta, -2)
-      if (a.level === 'Iniciante') delta = Math.min(delta, 0)
-      let raw = base + delta
-      if (hasDiscomfort && spec.material === 'Poliéster') {
-        raw = Math.min(raw, base - 4, 45)
-        notes.add('Para a direção com poliéster e desconforto relatado, o protótipo testa pelo menos 4 lb abaixo da referência e no máximo 45 lb, respeitando o limite inferior do seletor. É um teto heurístico, não uma faixa clinicamente segura ou validada para a raquete.')
-      }
+      const raw = base + delta
       const adjusted = Math.max(MIN_TENSION, Math.min(MAX_TENSION, Math.round(raw)))
       if (adjusted !== raw) notes.add('O ajuste foi limitado à faixa de 30–69 lb do protótipo; isso não valida a faixa da sua raquete.')
       return adjusted
@@ -173,7 +157,7 @@ export function recommend(a: Answers): Recommendation[] {
       isValueOption: setup.id === valueOption.id,
       costComparison: compareCost(currentCost, setupCost(setup)),
       costNote,
-      reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${hasGoal('Pocketing') || liked.includes('Pocketing') ? setup.scores.Pocketing >= 4 ? ' A combinação busca uma sensação de maior pocketing, a confirmar em quadra.' : ' O pocketing é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${hasGoal('Snapback') || liked.includes('Snapback') ? setup.scores.Snapback >= 4 ? ' A combinação prioriza potencial de snapback; é uma hipótese para testar, não garantia de mais spin.' : ' O snapback é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${softOnly ? ' O perfil iniciante prioriza opções sem poliéster.' : hasDiscomfort ? hasPoly(setup) ? ' Esta é uma alternativa com poliéster em tensão reduzida, para avaliar com o encordoador.' : ' Esta opção prioriza materiais sem poliéster para comparar o conforto.' : ''}`,
+      reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${hasGoal('Pocketing') || liked.includes('Pocketing') ? setup.scores.Pocketing >= 4 ? ' A combinação busca uma sensação de maior pocketing, a confirmar em quadra.' : ' O pocketing é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${hasGoal('Snapback') || liked.includes('Snapback') ? setup.scores.Snapback >= 4 ? ' A combinação prioriza potencial de snapback; é uma hipótese para testar, não garantia de mais spin.' : ' O snapback é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${fullBedOnly ? ' O perfil iniciante recebe apenas opções full bed.' : ''}`,
       preservation,
       layoutChange: setup.layout === currentLayout ? `Mantém ${currentLayout}` : `Muda de ${currentLayout} para ${setup.layout}`,
       tensions: { mains, crosses, explanation: [...notes].join(' ') },
