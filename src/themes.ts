@@ -6,6 +6,7 @@ export const themes = [
   { id: 'nadal', name: 'Nadal', fullName: 'Rafael Nadal', outfit: 'Lilás e coral', colors: ['#b8a1de', '#ff704b', '#312a4b'], browserColor: '#60468d', position: '100%' },
   { id: 'djokovic', name: 'Djokovic', fullName: 'Novak Djokovic', outfit: 'Azul-celeste, cobalto e coral', colors: ['#78b9ed', '#1554ab', '#ff916f'], browserColor: '#1554ab', position: '50%' },
   { id: 'sinner', name: 'Sinner', fullName: 'Jannik Sinner', outfit: 'Mostarda, oliva e preto', colors: ['#d4a51c', '#56502b', '#181914'], browserColor: '#56502b', position: '50%' },
+  { id: 'sampras', name: 'Sampras', fullName: 'Pete Sampras', outfit: 'All white · branco, preto e cinza', colors: ['#ffffff', '#202226', '#c8cbd0'], browserColor: '#ffffff', position: '50%' },
 ] as const
 export const secretTheme = { id: 'jungle', browserColor: '#10291c' } as const
 export const allThemes = [...themes, secretTheme] as const

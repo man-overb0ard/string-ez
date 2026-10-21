@@ -33,7 +33,7 @@
 .theme-picker{max-width:780px;margin:32px auto 30px;text-align:left}
 .theme-picker-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text)}
 .theme-picker-hint{font-size:10px;font-weight:400;color:var(--muted)}
-.theme-options{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
+.theme-options{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
 .theme-option{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:8px 7px 13px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);transition:background-color .15s,border-color .15s,transform .15s}
 .theme-option:hover{transform:translateY(-3px);border-color:var(--accent)}
 .theme-option[aria-pressed=true]{border:2px solid var(--accent);padding:7px 6px 12px;background:var(--soft)}
@@ -83,3 +83,12 @@
 :root[data-theme=jungle] .primary{border:1px solid #ffea83;border-bottom:4px solid #93611d;box-shadow:0 3px 0 #091b12}
 :root[data-theme=jungle] .cards article{border-color:#9b7b4c;background:linear-gradient(110deg,#4d342429,#4d342400),var(--surface)}
 :root[data-theme=jungle] header,:root[data-theme=jungle] footer{border-color:#8f754a}
+
+:root[data-theme=sampras] {
+  color-scheme:light;
+  --page-bg:#ffffff; --text:#17191c; --muted:#555b63; --muted-small:#60666e;
+  --surface:#fafafa; --border:#c8cbd0; --primary:#202226; --on-primary:#ffffff; --primary-hover:#000000;
+  --accent:#33383f; --soft:#eceef0; --soft-hover:#f1f2f4; --notice:#eff0f2; --panel:#f2f3f5;
+  --cross-bg:#eef0f3; --cross:#505762; --cross-border:#737984; --focus:#515763; --frame:#777e88; --ball-seam:#ffffff;
+}
+.theme-portrait[data-player=sampras]{background-image:url('./assets/sampras-white.png');background-size:auto 165%;background-position:center 3%}
