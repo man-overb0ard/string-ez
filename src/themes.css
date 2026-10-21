@@ -30,10 +30,10 @@
   --accent:#60468d; --soft:#e8dff5; --soft-hover:#f0e9f9; --notice:#ece5f6; --panel:#eee7f6;
   --cross-bg:#ffe7df; --cross:#9c3d29; --cross-border:#b74c34; --focus:#9c3d29; --frame:#80718f;
 }
-.theme-picker{max-width:680px;margin:32px auto 30px;text-align:left}
+.theme-picker{max-width:780px;margin:32px auto 30px;text-align:left}
 .theme-picker-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text)}
 .theme-picker-hint{font-size:10px;font-weight:400;color:var(--muted)}
-.theme-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
+.theme-options{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:4px 3px 8px}
 .theme-option{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:8px 7px 13px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);transition:background-color .15s,border-color .15s,transform .15s}
 .theme-option:hover{transform:translateY(-3px);border-color:var(--accent)}
 .theme-option[aria-pressed=true]{border:2px solid var(--accent);padding:7px 6px 12px;background:var(--soft)}
@@ -61,3 +61,11 @@
 /* O sprite não tem divisões exatas: recorte interno evita mostrar o tenista vizinho. */
 .theme-portrait[data-player=guga]{background-size:600% auto;background-position:26% 20%}
 .theme-portrait[data-player=agassi]{background-size:600% auto;background-position:51.5% 20%}
+
+:root[data-theme=sinner] {
+  --page-bg:#faf7ed; --text:#27291d; --muted:#62634e; --muted-small:#6a6955;
+  --surface:#fffdf6; --border:#ccc6aa; --primary:#d4a51c; --on-primary:#242619; --primary-hover:#e2b630;
+  --accent:#57552a; --soft:#eeebcf; --soft-hover:#f3efd8; --notice:#f4eccb; --panel:#efead7;
+  --cross-bg:#e6e9d9; --cross:#454e2d; --cross-border:#69734a; --focus:#77520b; --frame:#747554;
+}
+.theme-portrait[data-player=sinner]{background-image:url('./assets/sinner-mustard.png');background-size:auto 165%;background-position:center 3%}

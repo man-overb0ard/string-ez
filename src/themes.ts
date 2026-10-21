@@ -5,6 +5,7 @@ export const themes = [
   { id: 'federer', name: 'Federer', fullName: 'Roger Federer', outfit: 'All black · modo noturno', colors: ['#111214', '#52565e', '#e5e7eb'], browserColor: '#111214', position: '75%' },
   { id: 'nadal', name: 'Nadal', fullName: 'Rafael Nadal', outfit: 'Lilás e coral', colors: ['#b8a1de', '#ff704b', '#312a4b'], browserColor: '#60468d', position: '100%' },
   { id: 'djokovic', name: 'Djokovic', fullName: 'Novak Djokovic', outfit: 'Azul-celeste, cobalto e coral', colors: ['#78b9ed', '#1554ab', '#ff916f'], browserColor: '#1554ab', position: '50%' },
+  { id: 'sinner', name: 'Sinner', fullName: 'Jannik Sinner', outfit: 'Mostarda, oliva e preto', colors: ['#d4a51c', '#56502b', '#181914'], browserColor: '#56502b', position: '50%' },
 ] as const
 export type ThemeId = typeof themes[number]['id']
 export const themeStorageKey = 'string-ez-theme'
