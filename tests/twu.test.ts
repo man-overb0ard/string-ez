@@ -68,5 +68,7 @@ describe('TWU imported evidence',()=>{
     assert.match(evidence,/51 lb, velocidade Fast/)
     assert.match(evidence,/nesses fatores usamos estimativas/)
     assert.match(evidence,/Não extrapolamos/)
+    assert.match(evidence,/Banco de dados TWU/)
+    assert.ok(!/\blinha \d+|\bplanilha\b|\barquivo\b/i.test(evidence))
   })
 })
