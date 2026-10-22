@@ -8,6 +8,7 @@ import { shotStyleOptions } from './shotStyle'
 import NtrpGuide from './NtrpGuide'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
+import PixContribution from './PixContribution'
 import { stringCatalog, specifyString, findString, resolveStringMaterial, materialLabel } from './stringCatalog'
 import { preferenceLabel, preferenceDescriptions, availableImprovementFactors, reconcileImprovementGoals, nothingLiked, togglePreference, canSelectPreference } from './preferences'
 import ThemePicker from './ThemePicker'
@@ -176,6 +177,7 @@ function App() {
         <div className="notice"><b>Como comparar na quadra</b><p>Registre a configuração escolhida e observe conforto, profundidade, controle e desgaste. Ao experimentar, prefira uma mudança por vez quando possível. Uma sugestão híbrida é uma alternativa para testar, não uma garantia de melhora.</p></div>
         <div className="actions"><button className="primary" onClick={copy}>{copied ? 'Resumo copiado ✓' : 'Copiar para o encordoador ↗'}</button><button className="secondary" onClick={regenerate} disabled={!hasMoreRecommendations}>Gerar novas 3 opções</button><button className="secondary" onClick={() => move(0)}>Rever respostas</button><button className="secondary" onClick={() => { setAnswers(initial); move(-1) }}>Começar de novo</button></div>
         {recommendations.length === 3 && !hasMoreRecommendations && <p className="micro" role="status">Não há mais três configurações inéditas que atendam às suas respostas e incluam uma opção de custo-benefício. Você pode copiar estas opções ou rever suas respostas.</p>}
+        <PixContribution />
       </section> : <section className="quiz">
         <div className="quiz-top"><span className="eyebrow">SEU PERFIL EM QUADRA</span><span>{step + 1} / {questions.length}</span></div>
         <progress aria-label="Progresso do questionário" value={step + 1} max={questions.length} />
