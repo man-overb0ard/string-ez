@@ -6,7 +6,7 @@ import { weeklyPlayProfile } from './weeklyPlay.ts'
 import { colorPreference, shapePreference, stringColors, stringShapes, stringAppearance, appearanceDescription } from './stringAppearance.ts'
 import { stringCostBand, compareCost, costNote } from './cost.ts'
 import { MIN_TENSION, MAX_TENSION } from './tensionRange.ts'
-import { factors, improvementFactors, reduceCost, type ImprovementFactor, type Factor } from './preferences.ts'
+import { preferenceLabel, factors, improvementFactors, reduceCost, type ImprovementFactor, type Factor } from './preferences.ts'
 export { factors } from './preferences.ts'
 export type Answers = {
   level: string; racket: string; pattern: string; previous: string; tension: string; goals: string[]; pain: string
@@ -135,7 +135,7 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
     if (!headSize) notes.add('Sem tamanho validado, o ajuste considera apenas a contagem de cordas; não atribui propriedades específicas à marca ou à linha.')
     if (hasDiscomfort) notes.add('O desconforto informado dá mais peso ao conforto na pontuação, sem excluir materiais ou impor um teto de tensão. Poliésteres de resposta relativamente mais macia também são elegíveis; uma redução de tensão pode ser avaliada com o encordoador. A recomendação não garante ausência de dor.')
     if (fullBedOnly) notes.add('Para iniciantes, as três opções são full bed, sem exclusão automática de materiais.')
-    if (goals.length === 2) notes.add(`Objetivos combinados com o mesmo peso: ${goals.join(' e ')}. Ajustes de tensão em sentidos opostos são compensados, em vez de prometer melhorar tudo ao mesmo tempo.`)
+    if (goals.length === 2) notes.add(`Objetivos combinados com o mesmo peso: ${goals.map(preferenceLabel).join(' e ')}. Ajustes de tensão em sentidos opostos são compensados, em vez de prometer melhorar tudo ao mesmo tempo.`)
     const tensionFor = (base: number, oldMaterial: string, spec: StringSpec) => {
       const goalDelta = (goal: ImprovementFactor) => goal === 'Controle' ? 2 : goal === 'Conforto' || goal === 'Potência' ? -2 : 0
       let delta = goals.reduce((sum, goal) => sum + goalDelta(goal), 0) / goals.length
@@ -164,13 +164,15 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
       mains = tensionFor(oldMains, currentMains, setup.mains)
       crosses = tensionFor(oldCrosses, currentCrosses, setup.crosses)
     }
+    if (hasGoal('Manutenção de tensão') || liked.includes('Manutenção de tensão')) notes.add('Consistência ao longo do uso considera a perda de tensão medida no ensaio correspondente, quando disponível, ou uma estimativa. Ela não mede resistência ao rompimento nem prevê quantas horas a corda vai durar. Não há ajuste de tensão específico para prometer maior manutenção de tensão.')
     if (goals.length === 1 && hasGoal(reduceCost)) notes.add('Reduzir o custo orienta a escolha da corda; a tensão não é alterada para prometer economia. Eventuais ajustes de tensão decorrem da mudança de material e do histórico informado.')
+    else if (goals.length === 1 && hasGoal('Manutenção de tensão')) notes.add('Para consistência ao longo do uso, a escolha prioriza a retenção de tensão; não há mudança de tensão específica para prometer maior duração da resposta.')
     else notes.add(hasGoal('Controle') ? 'O ajuste busca uma resposta mais contida, preservando conforto quando ele foi marcado.' : hasGoal('Conforto') || hasGoal('Potência') ? 'O ajuste busca uma resposta mais elástica; menor tensão não substitui a escolha do material.' : 'Para efeito e durabilidade, a combinação de cordas tem prioridade sobre mudanças grandes de tensão.')
     if (hasGoal('Snapback') || liked.includes('Snapback')) notes.add('Snapback é o retorno das cordas à posição após o impacto. Com ensaio correspondente, a nota relativa usa o atrito corda/corda medido na TWU; sem ele, usa uma estimativa. No híbrido, a interação entre as duas cordas não foi medida. Desgaste, entalhes e técnica afetam o resultado; não há ajuste de tensão específico para prometer snapback.')
     if (hasGoal('Pocketing') || liked.includes('Pocketing')) notes.add('Pocketing é a sensação de a bola afundar e ser abraçada pelas cordas no impacto. A classificação é heurística, ligada à elasticidade dos materiais e à combinação; tensão, calibre, raquete e técnica também influenciam. Não é uma medição de tempo de contato nem motivo isolado para baixar a tensão.')
     const supported = liked.filter(f => setup.scores[f] >= 3)
     const compromises = liked.filter(f => setup.scores[f] < 3)
-    const preservation = liked.length === 0 ? preferences.length ? 'As preferências de cor e formato estão detalhadas abaixo.' : 'Você não marcou um ponto a preservar; a prioridade é o objetivo escolhido.' : `${supported.length ? `Busca preservar: ${supported.join(', ')}.` : 'Os pontos que você gosta podem mudar com esta configuração.'}${compromises.length ? ` Atenção à possível perda de ${compromises.join(', ')}.` : ''}`
+    const preservation = liked.length === 0 ? preferences.length ? 'As preferências de cor e formato estão detalhadas abaixo.' : 'Você não marcou um ponto a preservar; a prioridade é o objetivo escolhido.' : `${supported.length ? `Busca preservar: ${supported.map(preferenceLabel).join(', ')}.` : 'Os pontos que você gosta podem mudar com esta configuração.'}${compromises.length ? ` Atenção à possível perda de ${compromises.map(preferenceLabel).join(', ')}.` : ''}`
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
@@ -183,7 +185,7 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
       isValueOption: setup.id === valueOption.id,
       costComparison: compareCost(currentCost, setupCost(setup)),
       costNote,
-      reason: `Para buscar ${goals.map(goal => goal.toLowerCase()).join(' e ')}: ${setup.benefit}${hasGoal('Pocketing') || liked.includes('Pocketing') ? setup.scores.Pocketing >= 4 ? ' A combinação busca uma sensação de maior pocketing, a confirmar em quadra.' : ' O pocketing é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${hasGoal('Snapback') || liked.includes('Snapback') ? setup.scores.Snapback >= 4 ? ' A combinação prioriza potencial de snapback; é uma hipótese para testar, não garantia de mais spin.' : ' O snapback é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${fullBedOnly ? ' O perfil iniciante recebe apenas opções full bed.' : ''}`,
+      reason: `Para buscar ${goals.map(goal => preferenceLabel(goal).toLowerCase()).join(' e ')}: ${setup.benefit}${hasGoal('Pocketing') || liked.includes('Pocketing') ? setup.scores.Pocketing >= 4 ? ' A combinação busca uma sensação de maior pocketing, a confirmar em quadra.' : ' O pocketing é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${hasGoal('Snapback') || liked.includes('Snapback') ? setup.scores.Snapback >= 4 ? ' A combinação prioriza potencial de snapback; é uma hipótese para testar, não garantia de mais spin.' : ' O snapback é uma concessão nesta alternativa para conciliar as demais prioridades e o custo.' : ''}${fullBedOnly ? ' O perfil iniciante recebe apenas opções full bed.' : ''}`,
       preservation,
       layoutChange: setup.layout === currentLayout ? `Mantém ${currentLayout}` : `Muda de ${currentLayout} para ${setup.layout}`,
       tensions: { mains, crosses, explanation: [...notes].join(' ') },

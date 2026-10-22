@@ -9,7 +9,7 @@ import NtrpGuide from './NtrpGuide'
 import TensionSelector from './TensionSelector'
 import RecommendationCard from './RecommendationCard'
 import { stringCatalog, specifyString, findString, resolveStringMaterial, materialLabel } from './stringCatalog'
-import { availableImprovementFactors, reconcileImprovementGoals, nothingLiked, togglePreference, canSelectPreference } from './preferences'
+import { preferenceLabel, preferenceDescriptions, availableImprovementFactors, reconcileImprovementGoals, nothingLiked, togglePreference, canSelectPreference } from './preferences'
 import ThemePicker from './ThemePicker'
 import { allThemes, readSavedTheme, themeStorageKey } from './themes'
 import { sortOptions } from './sortOptions'
@@ -87,7 +87,8 @@ function App() {
   ]
   const result = step === questions.length
   const q = questions[step]
-  const options = (q?.key === 'level' || q?.key === 'weeklyHours' || q?.key === 'shotStyle') ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), materialLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
+  const optionLabel = (value: string) => q?.key === 'liked' || q?.key === 'goals' ? preferenceLabel(value) : materialLabel(value)
+  const options = (q?.key === 'level' || q?.key === 'weeklyHours' || q?.key === 'shotStyle') ? q.options ?? [] : [...sortOptions((q?.options ?? []).filter(option => option !== specifyString), optionLabel), ...(q?.options?.includes(specifyString) ? [specifyString] : [])]
   const isTension = q?.key === 'tension' || q?.key === 'mainsTension' || q?.key === 'crossesTension'
   const isGoals = q?.key === 'goals'
   const isLiked = q?.key === 'liked'
@@ -111,8 +112,9 @@ function App() {
   }
 
   const answerText = (key: keyof Answers) => {
-    if (key === 'liked') return answers.liked.map(value => value === colorPreference ? `${value}: ${answers.preferredColor}` : value === shapePreference ? `${value}: ${answers.preferredShape}` : value).join(', ')
-    if (key === 'goals' || key === 'painDetails') return answers[key].join(', ')
+    if (key === 'liked') return answers.liked.map(value => value === colorPreference ? `${value}: ${answers.preferredColor}` : value === shapePreference ? `${value}: ${answers.preferredShape}` : preferenceLabel(value)).join(', ')
+    if (key === 'goals') return answers.goals.map(preferenceLabel).join(', ')
+    if (key === 'painDetails') return answers.painDetails.join(', ')
     if ((key === 'previous' || key === 'mains' || key === 'crosses') && answers[key] === specifyString) return materialLabel(materialFor(key))
     return typeof answers[key] === 'string' ? materialLabel(answers[key]) : answers[key]
   }
@@ -164,7 +166,7 @@ function App() {
         <p className="eyebrow">SEU PRÓXIMO ENCORDOAMENTO</p><h1 ref={heading} tabIndex={-1}>Três caminhos.<br /><em>Um jogo mais seu.</em></h1>
         <p className="lead">Configurações para discutir com seu encordoador e testar em quadra, escolhidas por regras a partir do seu perfil.</p>
         <p className="racket-reference">Referência: <b>{racketSummary}</b> · {resolvedPattern}{getHeadSize(answers.brand, answers.line, answers.racket) ? ` · ${getHeadSize(answers.brand, answers.line, answers.racket)} pol²` : ''}</p>
-        <div className="profile-priorities"><p><b>Preservar</b> {answerText('liked')}</p><p><b>Melhorar</b> {answers.goals.join(' · ')}</p></div>
+        <div className="profile-priorities"><p><b>Preservar</b> {answerText('liked')}</p><p><b>Melhorar</b> {answers.goals.map(preferenceLabel).join(' · ')}</p></div>
         <details><summary>Conferir minhas respostas</summary><dl><div><dt>Padrão de cordas</dt><dd>{resolvedPattern}</dd></div>{questions.filter(item => item.key !== 'pattern').map(item => <div key={item.key}><dt>{item.title}</dt><dd>{answerText(item.key)}</dd></div>)}</dl></details>
         {answers.pain === 'Sim' && <p className="notice"><b>Desconfortos informados: {answers.painDetails.join(' · ')}.</b> Dor persistente merece avaliação de um profissional de saúde. Trocar cordas não trata lesões. As opções podem incluir poliéster em tensão reduzida; isso não garante conforto nem ausência de dor.</p>}
         <p className="notice"><b>Antes de encordoar:</b> as tensões abaixo são pontos de teste, não uma faixa validada para sua raquete. Confirme cada valor com o encordoador e com a indicação do fabricante. Os modelos de corda fazem parte de um catálogo inicial; preço e disponibilidade não são consultados em tempo real.</p>
@@ -185,7 +187,7 @@ function App() {
         <form onSubmit={event => { event.preventDefault(); if (isMulti && multiSelection.length && (multiSelection.length <= multiLimit) && (!isLiked || appearanceComplete)) move(step + 1) }}>
           <fieldset aria-describedby="question-hint"><legend className="sr-only">{q.title}</legend>
             {isTension ? <TensionSelector key={q.key} label={q.title} selected={String(answers[q.key])} onSelect={choose} />
-              : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={option} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{option}{(option === 'Snapback' || option === 'Pocketing') && <small className="snapback-option-hint">{option === 'Snapback' ? 'Retorno das cordas à posição após o impacto.' : 'Sensação de a bola afundar e ser abraçada pelas cordas no impacto.'}</small>}</span></label>)}</div>
+              : isMulti ? <div className="choices liked-choices">{options.map(option => <label className={multiSelection.includes(option) ? 'choice selected' : 'choice'} key={option}><input type="checkbox" aria-label={preferenceLabel(option)} checked={multiSelection.includes(option)} disabled={!canSelectPreference(multiSelection, option, multiLimit)} onChange={() => toggleMulti(option)} /><span>{preferenceLabel(option)}{preferenceDescriptions[option] && <small className="snapback-option-hint">{preferenceDescriptions[option]}</small>}</span></label>)}</div>
                 : <div className={q.key === 'shotStyle' ? 'choices shot-style-choices' : q.key === 'layout' ? 'choices layout-choices' : q.key.endsWith('Brand') ? 'choices string-brand-choices' : 'choices'}>{options.map(option => <button type="button" className={`choice${answers[q.key] === option ? ' selected' : ''}${option === specifyString ? ' specify-string-choice' : ''}`} key={option} aria-pressed={answers[q.key] === option} onClick={() => choose(option)}>
                   {q.key === 'shotStyle' ? <ShotStyleOption label={option} /> : q.key === 'brand' ? <RacketBrandLogo brand={option} /> : q.key === 'layout' ? <><StringBedDiagram hybrid={option === 'Híbrido'} /><span className="layout-copy"><strong>{option}</strong><span>{option === 'Full bed' ? 'A mesma corda nas mains (verticais) e nas crosses (horizontais).' : 'Uma corda nas mains (verticais) e outra nas crosses (horizontais).'}</span><span className="string-color-legend"><span><i className="string-swatch mains-swatch" aria-hidden="true" />{option === 'Full bed' ? '↕ ↔ Mesma corda' : '↕ Verticais · corda A'}</span>{option === 'Híbrido' && <span><i className="string-swatch crosses-swatch" aria-hidden="true" />↔ Horizontais · corda B</span>}</span></span></> : q.key === 'level' ? <span className="string-model-option">{option}<small>{levelRanges[option]}</small></span> : q.key.endsWith('Model') ? <span className="string-model-option">{option}<small aria-hidden="true">{materialLabel(findString(String(answers[q.key.replace('Model', 'Brand') as keyof Answers]), option)?.material ?? '')}</small></span> : materialLabel(option)}<span aria-hidden="true">→</span>
                 </button>)}</div>}

@@ -1,4 +1,4 @@
-import { availableImprovementFactors, reconcileImprovementGoals } from '../src/preferences.ts'
+import { preferenceLabel, preferenceDescriptions, availableImprovementFactors, reconcileImprovementGoals } from '../src/preferences.ts'
 import { recommendGauge, referenceGauge, knownGauges, gaugeLabel } from '../src/stringGauge.ts'
 import type { StringSpec } from '../src/recommendations.ts'
 import { recommendationStrings } from '../src/recommendationStrings.ts'
@@ -163,9 +163,9 @@ describe('dois objetivos, snapback e contexto da raquete', () => {
     const second = recommend({ ...base, goals: ['Potência', 'Controle'] })
     assert.deepEqual(first.map(r => [r.id, r.tensions.mains, r.tensions.crosses]), second.map(r => [r.id, r.tensions.mains, r.tensions.crosses]))
     for (const r of first) {
-      assert.match(r.reason, /controle e potência/)
+      assert.match(r.reason, /controle de profundidade e potência fácil/)
       assert.match(r.tensions.explanation, /mesmo peso/)
-      assert.match(recommendationText(r), /Controle e Potência/)
+      assert.match(recommendationText(r), /Controle de profundidade e Potência fácil/)
     }
     const sameMaterial = recommend({ ...base, previous: 'Multifilamento', goals: ['Controle', 'Potência'] }).find(r => r.layout === 'Full bed' && r.mains.material === 'Multifilamento')!
     assert.ok(sameMaterial)
@@ -714,5 +714,29 @@ describe('novos conjuntos de recomendações sem refazer respostas', () => {
       const excluded=recommendationSetups.filter(s=>!keep.has(s.id)).map(s=>s.id)
       assert.deepEqual(recommend(base,excluded),[])
     }
+  })
+})
+
+
+describe('nomes claros e consistência como objetivo', () => {
+  it('diferencia rompimento de consistência e mantém os identificadores usados pelo motor', () => {
+    assert.equal(preferenceLabel('Durabilidade'),'Resistência ao rompimento')
+    assert.equal(preferenceLabel('Manutenção de tensão'),'Consistência ao longo do uso')
+    assert.equal(preferenceLabel('Pocketing'),'Sensação de encaixe — Pocketing')
+    assert.ok(preferenceDescriptions.Durabilidade.includes('arrebentar'))
+    assert.ok(preferenceDescriptions['Manutenção de tensão'].includes('mesmo sem a corda arrebentar'))
+    assert.ok(improvementFactors.includes('Manutenção de tensão'))
+    assert.ok(!availableImprovementFactors(['Manutenção de tensão']).includes('Manutenção de tensão'))
+    assert.deepEqual(reconcileImprovementGoals(['Manutenção de tensão','Spin'],['Manutenção de tensão']),['Spin'])
+  })
+  it('usa consistência nas recomendações e no resumo sem confundir com resistência ao rompimento', () => {
+    const result=recommend({...base,goals:['Manutenção de tensão']})
+    assert.equal(result.length,3)
+    for(const r of result){
+      assert.match(r.reason,/consistência ao longo do uso/)
+      assert.match(r.tensions.explanation,/Ela não mede resistência ao rompimento/)
+      assert.ok(recommendationText(r).includes('Consistência ao longo do uso'))
+    }
+    assert.deepEqual(result.map(r=>r.isValueOption),[false,false,true])
   })
 })

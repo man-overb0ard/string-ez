@@ -196,3 +196,9 @@ A planilha fornecida pelo usuário foi incorporada como fonte de medições: **7
 A escolha de calibre precede a ordenação. Não se emprestam medidas de outro calibre nem se extrapolam números para a tensão recomendada. As variantes medidas complementam o catálogo de calibres, sem garantir disponibilidade atual. O banco e o código de importação são locais; não há chamada à TWU durante o uso, nem envio de respostas.
 
 Veja [a metodologia, auditoria e reprodução da importação](docs/twu-integration.md). A documentação histórica de reviews e calibres registra as consultas anteriores; os números de cobertura atuais estão nessa integração.
+
+## Nomes e explicações dos fatores
+
+Os campos usam rótulos voltados à percepção do jogador: Conforto no impacto, Controle de profundidade, Potência fácil, Spin, Resistência ao rompimento, Consistência ao longo do uso, Retorno das cordas — Snapback e Sensação de encaixe — Pocketing. Cada um tem uma descrição breve. Os identificadores internos permanecem estáveis para a classificação e a integração TWU; `preferenceLabel` traduz rótulos nas perguntas, na ordenação alfabética, no resumo e nos textos das recomendações.
+
+Consistência ao longo do uso (identificador `Manutenção de tensão`) está tanto em preservar como em melhorar e usa a avaliação de perda de tensão quando há ensaio correspondente. Ela é apresentada separadamente da resistência ao rompimento. A amarração continua baseada nos identificadores: preservar um fator o oculta nas melhorias, inclusive consistência, e alterar preferências ao voltar limpa somente objetivos conflitantes. Preço/cor/formato e os limites de seleção permanecem como antes.
