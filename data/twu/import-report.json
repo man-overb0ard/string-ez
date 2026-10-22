@@ -1,0 +1,153 @@
+{
+  "source": "Tennis Warehouse DB.xlsx",
+  "workbookSha256": "366b07b8b65d29d0c430ccb15d76f2e44d372eee34308e77edb96ae425cd52b3",
+  "sourceRows": 788,
+  "mappedModels": 94,
+  "runtimeModels": 94,
+  "runtimeRows": 199,
+  "conditions": [
+    {
+      "tensionLb": 51,
+      "swingSpeed": "Fast"
+    }
+  ],
+  "issues": [
+    {
+      "row": 9,
+      "field": "Gauge Nominal (mm)",
+      "raw": 0,
+      "action": "quarantined"
+    },
+    {
+      "row": 9,
+      "field": "Gauge Nominal (mm)",
+      "action": "recovered_from_explicit_name",
+      "value": 1.2
+    },
+    {
+      "row": 54,
+      "field": "Gauge Nominal (mm)",
+      "raw": 0,
+      "action": "quarantined"
+    },
+    {
+      "row": 54,
+      "field": "Gauge Nominal (mm)",
+      "action": "recovered_from_explicit_name",
+      "value": 1.25
+    },
+    {
+      "row": 54,
+      "field": "String",
+      "action": "duplicate_name_excluded_from_runtime"
+    },
+    {
+      "row": 70,
+      "field": "Gauge Nominal (mm)",
+      "raw": 16,
+      "action": "quarantined"
+    },
+    {
+      "row": 184,
+      "field": "Gauge Acutal (mm)",
+      "raw": "1.0 x",
+      "action": "quarantined"
+    },
+    {
+      "row": 198,
+      "field": "Gauge Nominal (mm)",
+      "raw": 0,
+      "action": "quarantined"
+    },
+    {
+      "row": 198,
+      "field": "Gauge Nominal (mm)",
+      "action": "recovered_from_explicit_name",
+      "value": 1.25
+    },
+    {
+      "row": 235,
+      "field": "Gauge Nominal (mm)",
+      "raw": 1275,
+      "action": "quarantined"
+    },
+    {
+      "row": 235,
+      "field": "Gauge Nominal (mm)",
+      "action": "recovered_from_explicit_name",
+      "value": 1.275
+    },
+    {
+      "row": 298,
+      "field": "Gauge Acutal (mm)",
+      "raw": "1.0 x",
+      "action": "quarantined"
+    },
+    {
+      "row": 377,
+      "field": "Gauge Acutal (mm)",
+      "raw": "1.1 x",
+      "action": "quarantined"
+    },
+    {
+      "row": 411,
+      "field": "Gauge Acutal (mm)",
+      "raw": "1.0 x",
+      "action": "quarantined"
+    },
+    {
+      "row": 456,
+      "field": "Gauge Nominal (mm)",
+      "raw": 0,
+      "action": "quarantined"
+    },
+    {
+      "row": 456,
+      "field": "Gauge Nominal (mm)",
+      "action": "recovered_from_explicit_name",
+      "value": 1.3
+    },
+    {
+      "row": 463,
+      "field": "Gauge Acutal (mm)",
+      "raw": "1.2 x",
+      "action": "quarantined"
+    },
+    {
+      "row": 484,
+      "field": "Static Loss lbs.",
+      "raw": "641.65",
+      "action": "quarantined"
+    },
+    {
+      "row": 484,
+      "field": "Stabilization Loss (lbs)",
+      "raw": "-617.26",
+      "action": "quarantined"
+    },
+    {
+      "row": 502,
+      "field": "Gauge Acutal (mm)",
+      "raw": 38,
+      "action": "quarantined"
+    },
+    {
+      "row": 528,
+      "field": "Gauge Nominal (mm)",
+      "raw": 1251,
+      "action": "quarantined"
+    },
+    {
+      "row": 756,
+      "field": "Gauge Acutal (mm)",
+      "raw": 315,
+      "action": "quarantined"
+    },
+    {
+      "row": 789,
+      "field": "String",
+      "action": "duplicate_name_excluded_from_runtime"
+    }
+  ],
+  "modelsWithoutRuntimeData": []
+}

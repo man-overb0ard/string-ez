@@ -1,10 +1,17 @@
+import { measuredGauges } from './twu.ts'
 import { gaugeVariants } from './gaugeVariants.ts'
 import type { StringSpec } from './recommendations.ts'
 
 type GaugeContext = { goals: readonly string[]; liked?: readonly string[]; weeklyHours?: string; pattern: string; headSize?: number }
 export const gaugeLabel = (hundredths: number): string => `${(hundredths / 100).toFixed(2).replace('.', ',')} mm`
+const gaugeCache = new Map<string, readonly number[]>()
 export function knownGauges(spec: Pick<StringSpec, 'brand' | 'model'>): readonly number[] {
-  return gaugeVariants[`${spec.brand} ${spec.model}`] ?? []
+  const key = `${spec.brand} ${spec.model}`
+  const cached = gaugeCache.get(key)
+  if (cached) return cached
+  const values = [...new Set([...(gaugeVariants[key] ?? []), ...measuredGauges(spec)])].sort((a,b)=>a-b)
+  gaugeCache.set(key,values)
+  return values
 }
 function closest(variants: readonly number[], target: number): number {
   return [...variants].sort((a,b) => Math.abs(a-target)-Math.abs(b-target) || b-a)[0]
@@ -15,7 +22,7 @@ export function referenceGauge(spec: Pick<StringSpec, 'brand' | 'model' | 'mater
 }
 export function recommendGauge(spec: StringSpec, context: GaugeContext): { spec: StringSpec; explanation: string } {
   const variants = knownGauges(spec)
-  if (!variants.length) return { spec: { ...spec, gauge: 'A confirmar' }, explanation: 'Calibres deste modelo ainda não confirmados no catálogo consultado. Confirme as variantes com o encordoador; não atribuímos 1,25 ou 1,30 mm automaticamente.' }
+  if (!variants.length) return { spec: { ...spec, gauge: 'A confirmar' }, explanation: 'Calibres deste modelo ainda não confirmados no catálogo ou nos ensaios consultados. Confirme as variantes com o encordoador; não atribuímos 1,25 ou 1,30 mm automaticamente.' }
   const poly = spec.material === 'Poliéster'
   const baseline = closest(variants, poly ? 125 : 130)
   const priority = (factor: string) => (context.goals.includes(factor) ? 2 : 0) + (context.liked?.includes(factor) ? 1 : 0)
@@ -41,5 +48,5 @@ export function recommendGauge(spec: StringSpec, context: GaugeContext): { spec:
   }
   const selected = closest(variants, target)
   const availability = selected === target ? '' : ` Entre os calibres confirmados deste modelo, ${gaugeLabel(selected)} é o mais próximo da referência buscada (${gaugeLabel(target)}).`
-  return { spec: { ...spec, gauge: gaugeLabel(selected) }, explanation: `${purpose}${availability} Variantes consultadas: ${variants.map(gaugeLabel).join(', ')}. Confirme disponibilidade local. A frequência não informa se você costuma romper cordas; o calibre atual não foi coletado, portanto não calculamos uma mudança em relação a ele.` }
+  return { spec: { ...spec, gauge: gaugeLabel(selected) }, explanation: `${purpose}${availability} Variantes de referência (catálogo/ensaios): ${variants.map(gaugeLabel).join(', ')}. Os ensaios podem incluir variantes antigas; confirme disponibilidade local. A frequência não informa se você costuma romper cordas; o calibre atual não foi coletado, portanto não calculamos uma mudança em relação a ele.` }
 }

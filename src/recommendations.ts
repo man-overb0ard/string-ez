@@ -1,3 +1,4 @@
+import { measuredScores, twuExplanation, findTwuMeasurement, measurementSupport } from './twu.ts'
 import { recommendGauge } from './stringGauge.ts'
 import { recommendationStrings, type StringProfile } from './recommendationStrings.ts'
 import { shotStyleProfile } from './shotStyle.ts'
@@ -21,15 +22,14 @@ export type Recommendation = Setup & {
   reason: string; preservation: string; layoutChange: string
   tensions: { mains: number; crosses: number; explanation: string }
   tensionComparison: string; caution: string
-  gaugeNote: string; shotStyleNote: string; frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
+  evidenceLabel: string; evidenceNote: string; gaugeNote: string; shotStyleNote: string; frequencyNote: string; appearanceNote: string; isValueOption: boolean; costComparison: string; costNote: string
 }
 // Todo modelo do catálogo participa como full bed. Híbridos usam cruzamentos
 // selecionados por material, evitando o produto cartesiano de combinações sem propósito.
 function fullBed(profile: StringProfile): Setup {
   const poly = profile.material === 'Poliéster'
-  const strengths = factors.filter(f => f !== 'Preço' && profile.scores[f] >= 4).join(', ').toLowerCase()
   return { id: profile.id, title: `${profile.brand} ${profile.model}`, layout: 'Full bed', mains: profile, crosses: profile, scores: profile.scores,
-    benefit: `Neste perfil qualitativo, os pontos fortes são ${strengths || 'equilíbrio entre os fatores'}. ` + (poly ? 'Copoliéster para comparar controle, rotação e resposta no swing completo, conforme o perfil deste modelo.' : 'Uma configuração uniforme para explorar a resposta e a elasticidade deste modelo, conforme suas prioridades.'),
+    benefit: (poly ? 'Copoliéster para comparar controle, rotação e resposta no swing completo, conforme o perfil deste modelo.' : 'Uma configuração uniforme para explorar a resposta e a elasticidade deste modelo, conforme suas prioridades.'),
     tradeoff: poly ? 'O conforto varia entre modelos, calibres e tensões. Uma tensão menor pode ser um ponto de teste com o encordoador; acompanhe perda de resposta e desgaste, mesmo sem rompimento.' : profile.material === 'Tripa natural' ? 'Preço alto, cuidados com umidade e maior sensibilidade à abrasão.' : 'Pode se desgastar ou romper mais cedo com golpes rápidos e muito efeito; confirme calibre e custo local.' }
 }
 function hybrid(main: StringProfile, cross: StringProfile): Setup {
@@ -92,13 +92,23 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
     const main = stringAppearance(s.mains), cross = stringAppearance(s.crosses)
     return (color ? (main.colors.includes(color) ? 5 : 0) + (cross.colors.includes(color) ? 2 : 0) : 0) + (shape ? (main.shape === shape ? 5 : 0) + (cross.shape === shape ? 2 : 0) : 0)
   }
-  const candidates = recommendationSetups
+  const gaugeContext = { goals, liked, weeklyHours: a.weeklyHours, pattern: a.pattern, headSize }
+  const evaluatedProfiles = new Map(recommendationStrings.map(profile => {
+    const spec = recommendGauge(profile,gaugeContext).spec
+    return [`${profile.brand} ${profile.model}`, { spec, scores:measuredScores(spec,profile.scores,color), evidenceSupport:measurementSupport(spec,[...goals,...liked],color) }] as const
+  }))
+  const candidates = recommendationSetups.map(candidate => {
+    const main = evaluatedProfiles.get(`${candidate.mains.brand} ${candidate.mains.model}`)!
+    const cross = evaluatedProfiles.get(`${candidate.crosses.brand} ${candidate.crosses.model}`)!
+    const scores = candidate.layout === 'Full bed' ? main.scores : Object.fromEntries(factors.map(f=>[f,f==='Preço'?Math.min(main.scores[f],cross.scores[f]):Math.round((main.scores[f]*0.65+cross.scores[f]*0.35)*100)/100])) as Scores
+    return { ...candidate, mains:main.spec, crosses:cross.spec, scores, evidenceSupport:candidate.layout==='Full bed'?main.evidenceSupport:main.evidenceSupport*0.65+cross.evidenceSupport*0.35 }
+  })
   const alreadyUsesNaturalGut = currentMains === 'Tripa natural' || currentCrosses === 'Tripa natural'
   const eligible = candidates.filter(s => !excluded.has(s.id) &&
     (alreadyUsesNaturalGut || (s.mains.material !== 'Tripa natural' && s.crosses.material !== 'Tripa natural')) &&
     (!fullBedOnly || s.layout === 'Full bed')
   )
-  const ranked = eligible.map(setup => ({ setup, score: (shot ? shot.control * setup.scores.Controle + shot.power * setup.scores.Potência + shot.spin * setup.scores.Spin + shot.snapback * setup.scores.Snapback + shot.durability * setup.scores.Durabilidade + shot.retention * setup.scores['Manutenção de tensão'] : 0) + (frequency ? frequency.retention * setup.scores['Manutenção de tensão'] + frequency.durability * setup.scores.Durabilidade + frequency.price * setup.scores.Preço : 0) + appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto : 0) })).sort((a, b) => b.score - a.score || a.setup.id.localeCompare(b.setup.id))
+  const ranked = eligible.map(setup => ({ setup, score: (shot ? shot.control * setup.scores.Controle + shot.power * setup.scores.Potência + shot.spin * setup.scores.Spin + shot.snapback * setup.scores.Snapback + shot.durability * setup.scores.Durabilidade + shot.retention * setup.scores['Manutenção de tensão'] : 0) + (frequency ? frequency.retention * setup.scores['Manutenção de tensão'] + frequency.durability * setup.scores.Durabilidade + frequency.price * setup.scores.Preço : 0) + appearanceScore(setup) + 5 * goals.reduce((sum, goal) => sum + setup.scores[goal === reduceCost ? 'Preço' : goal], 0) / goals.length + liked.reduce((sum, f) => sum + 2 * setup.scores[f], 0) + (hasDiscomfort ? 2 * setup.scores.Conforto : 0) })).sort((a, b) => b.score - a.score || b.setup.evidenceSupport - a.setup.evidenceSupport || a.setup.id.localeCompare(b.setup.id))
   const currentCost = currentLayout === 'Híbrido'
     ? (stringCostBand(currentMains, a.mainsBrand, a.mainsModel) + stringCostBand(currentCrosses, a.crossesBrand, a.crossesModel)) / 2
     : stringCostBand(currentMains, a.previousBrand, a.previousModel)
@@ -117,7 +127,6 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
   }
   const selected = [first, second, valueOption]
   return selected.map(candidate => {
-    const gaugeContext = { goals, liked, weeklyHours: a.weeklyHours, pattern: a.pattern, headSize }
     const mainGauge = recommendGauge(candidate.mains, gaugeContext)
     const crossGauge = candidate.layout === 'Full bed' ? mainGauge : recommendGauge(candidate.crosses, gaugeContext)
     const setup = { ...candidate, mains: mainGauge.spec, crosses: crossGauge.spec }
@@ -157,7 +166,7 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
     }
     if (goals.length === 1 && hasGoal(reduceCost)) notes.add('Reduzir o custo orienta a escolha da corda; a tensão não é alterada para prometer economia. Eventuais ajustes de tensão decorrem da mudança de material e do histórico informado.')
     else notes.add(hasGoal('Controle') ? 'O ajuste busca uma resposta mais contida, preservando conforto quando ele foi marcado.' : hasGoal('Conforto') || hasGoal('Potência') ? 'O ajuste busca uma resposta mais elástica; menor tensão não substitui a escolha do material.' : 'Para efeito e durabilidade, a combinação de cordas tem prioridade sobre mudanças grandes de tensão.')
-    if (hasGoal('Snapback') || liked.includes('Snapback')) notes.add('Snapback é o retorno das cordas à posição após o impacto. A classificação considera a combinação e o material de forma heurística, não medições de atrito. Desgaste, entalhes e técnica afetam o resultado; não há ajuste de tensão específico para prometer snapback.')
+    if (hasGoal('Snapback') || liked.includes('Snapback')) notes.add('Snapback é o retorno das cordas à posição após o impacto. Com ensaio correspondente, a nota relativa usa o atrito corda/corda medido na TWU; sem ele, usa uma estimativa. No híbrido, a interação entre as duas cordas não foi medida. Desgaste, entalhes e técnica afetam o resultado; não há ajuste de tensão específico para prometer snapback.')
     if (hasGoal('Pocketing') || liked.includes('Pocketing')) notes.add('Pocketing é a sensação de a bola afundar e ser abraçada pelas cordas no impacto. A classificação é heurística, ligada à elasticidade dos materiais e à combinação; tensão, calibre, raquete e técnica também influenciam. Não é uma medição de tempo de contato nem motivo isolado para baixar a tensão.')
     const supported = liked.filter(f => setup.scores[f] >= 3)
     const compromises = liked.filter(f => setup.scores[f] < 3)
@@ -165,6 +174,8 @@ export function recommend(a: Answers, excludedIds: readonly string[] = []): Reco
     const deltaText = (next: number, old: number) => `${old} → ${next} lb (${next - old > 0 ? '+' : ''}${next - old} lb)`
     return {
       ...setup,
+      evidenceLabel: setup.layout === 'Full bed' ? findTwuMeasurement(setup.mains,color) ? 'Base: ensaio TWU + avaliação qualitativa' : 'Base: avaliação qualitativa (sem ensaio correspondente)' : findTwuMeasurement(setup.mains,color) || findTwuMeasurement(setup.crosses,color) ? 'Base: ensaios TWU individuais; híbrido estimado' : 'Base: avaliação qualitativa do híbrido',
+      evidenceNote: setup.layout === 'Full bed' ? twuExplanation(setup.mains,color) : `Verticais: ${twuExplanation(setup.mains,color)} Horizontais: ${twuExplanation(setup.crosses,color)} O híbrido não foi medido como conjunto; a pontuação combinada é uma aproximação editorial de 65% verticais e 35% horizontais, inclusive para atrito e spin.`,
       gaugeNote: setup.layout === 'Full bed' ? mainGauge.explanation : `Verticais (${setup.mains.gauge}): ${mainGauge.explanation} Horizontais (${setup.crosses.gauge}): ${crossGauge.explanation}`,
       shotStyleNote: shot ? shot.note : '',
       frequencyNote: frequency ? `${frequency.label} por semana: ${frequency.note}${frequency.label === 'Até 2 horas' && hasPoly(setup) ? ' O poliéster pode perder resposta sem romper; acompanhe a condição das cordas entre as partidas.' : ''}` : '',
@@ -185,5 +196,5 @@ export function recommendationText(r: Recommendation): string {
   const setup = r.layout === 'Full bed'
     ? `${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb em toda a raquete`
     : `Mains (verticais): ${stringName(r.mains)} · ${r.mains.material} · ${r.mains.gauge} · ${r.tensions.mains} lb\nCrosses (horizontais): ${stringName(r.crosses)} · ${r.crosses.material} · ${r.crosses.gauge} · ${r.tensions.crosses} lb`
-  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.frequencyNote}\n${r.shotStyleNote}\nCalibre: ${r.gaugeNote}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
+  return `${r.title}\n${r.layoutChange}${r.isValueOption ? ' · Opção de custo-benefício' : ''}\n${setup}\n${r.reason}\n${r.preservation}\n${r.frequencyNote}\n${r.shotStyleNote}\nCalibre: ${r.gaugeNote}\nBase da recomendação: ${r.evidenceNote}\n${r.appearanceNote}\n${r.costComparison}\n${r.costNote}\nAjuste: ${r.tensionComparison}\n${r.tensions.explanation}\nO que considerar: ${r.tradeoff}\n${r.caution}`
 }

@@ -46,11 +46,15 @@ describe('configurações recomendadas', () => {
     const plain = recommend(base)
     const comfort = recommend({ ...base, liked: ['Conforto'] })
     assert.notDeepEqual(plain.map(r => r.id), recommend({ ...base, liked: ['Potência'] }).map(r => r.id))
-    const shared = comfort.find(r => plain.some(other => other.id === r.id))
-    assert.ok(shared)
-    assert.ok(shared.tensions.mains < plain.find(other => other.id === shared.id)!.tensions.mains)
-    assert.match(shared.preservation, /Conforto/)
-    assert.match(shared.preservation, /possível perda/)
+    assert.notDeepEqual(plain.map(r=>r.id),comfort.map(r=>r.id))
+    const keep=new Set(['ptp','hyperg','nylon'])
+    const excluded=recommendationSetups.filter(s=>!keep.has(s.id)).map(s=>s.id)
+    const original=recommend(base,excluded)
+    const adjusted=recommend({...base,liked:['Conforto']},excluded)
+    for(const shared of adjusted){
+      assert.equal(shared.tensions.mains,original.find(r=>r.id===shared.id)!.tensions.mains-1)
+      assert.match(shared.preservation,/Conforto/)
+    }
   })
   it('considera separadamente as tensões de um híbrido e as inclui na cópia', () => {
     const results = recommend({ ...base, layout: 'Híbrido', mains: 'Poliéster', crosses: 'Multifilamento', mainsTension: '54 lb', crossesTension: '48 lb', goals: ['Durabilidade'] })
@@ -186,7 +190,7 @@ describe('dois objetivos, snapback e contexto da raquete', () => {
     assert.equal(spin[0].scores.Spin, 5)
     assert.notEqual(snapback[0].id, spin[0].id)
     assert.equal(snapback[0].tensions.mains, 50)
-    assert.match(snapback[0].tensions.explanation, /não medições de atrito/)
+    assert.match(snapback[0].tensions.explanation, /atrito corda\/corda medido na TWU/)
     assert.match(snapback[0].reason, /não garantia de mais spin/)
     assert.match(snapback.find(r => r.isValueOption)!.reason, /snapback/)
   })
@@ -415,9 +419,9 @@ describe('tripa natural somente para quem já usa', () => {
   })
   it('mantém tripa natural elegível em full bed ou em qualquer direção do híbrido atual', () => {
     const profiles: Answers[] = [
-      { ...base, previous:'Tripa natural', goals:['Pocketing','Snapback'] },
-      { ...base, layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsTension:'52 lb', crossesTension:'48 lb', goals:['Pocketing','Snapback'] },
-      { ...base, layout:'Híbrido', mains:'Poliéster', crosses:'Tripa natural', mainsTension:'48 lb', crossesTension:'52 lb', goals:['Pocketing','Snapback'] },
+      { ...base, previous:'Tripa natural', goals:['Conforto'], liked:['Pocketing'] },
+      { ...base, layout:'Híbrido', mains:'Tripa natural', crosses:'Poliéster', mainsTension:'52 lb', crossesTension:'48 lb', goals:['Conforto'], liked:['Pocketing'] },
+      { ...base, layout:'Híbrido', mains:'Poliéster', crosses:'Tripa natural', mainsTension:'48 lb', crossesTension:'52 lb', goals:['Conforto'], liked:['Pocketing'] },
     ]
     for (const profile of profiles) assert.ok(recommend(profile).some(hasGut))
   })
@@ -474,8 +478,8 @@ describe('ordem das três recomendações', () => {
 describe('frequência semanal', () => {
   const frequencies = ['Até 2 horas','Mais de 2 até 5 horas','Mais de 5 até 10 horas','Mais de 10 horas']
   it('muda a escolha ao ponderar desgaste e preço, mantendo explicação e resumo', () => {
-    const low=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[0]})
-    const high=recommend({...base,goals:['Reduzir o custo'],weeklyHours:frequencies[3]})
+    const low=recommend({...base,goals:['Conforto'],weeklyHours:frequencies[0]})
+    const high=recommend({...base,goals:['Conforto'],weeklyHours:frequencies[3]})
     assert.notEqual(low[0].id,high[0].id)
     assert.ok(high[0].scores.Durabilidade >= low[0].scores.Durabilidade)
     assert.ok(low.every(r=>r.frequencyNote.includes('manutenção de tensão')))

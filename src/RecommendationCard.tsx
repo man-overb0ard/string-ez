@@ -13,6 +13,7 @@ export default function RecommendationCard({ recommendation: r, index }: { recom
     <p className="recommendation-reason">{r.reason}</p><p className="preservation">{r.preservation}</p>
     {r.appearanceNote && <p className="appearance-note"><b>Cor e formato</b><br />{r.appearanceNote}</p>}
     <div className="cost-comparison"><b>Comparando o custo</b><p>{r.costComparison}</p><details><summary>Como comparar os valores</summary><p>{r.costNote}</p></details></div>
+    <details className="tension-explanation evidence-explanation"><summary>{r.evidenceLabel}</summary><p>{r.evidenceNote}</p></details>
     <details className="tension-explanation gauge-explanation"><summary>Por que esse calibre?</summary><p>{r.gaugeNote}</p></details>
     <details className="tension-explanation"><summary>Entender o ajuste de tensão</summary><p><b>{r.tensionComparison}</b></p><p>{r.tensions.explanation}</p></details>
     <p className="tradeoff"><b>O que considerar</b>{r.tradeoff}</p><p className="recommendation-caution">{r.caution}</p>
