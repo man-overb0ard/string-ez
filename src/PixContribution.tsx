@@ -23,6 +23,7 @@ export default function PixContribution() {
     }
   }
   return <section className="pix-contribution" aria-labelledby="pix-contribution-title">
+    <div className="pix-contribution-panel">
     <h2 id="pix-contribution-title">Curtiu?</h2>
     <p>O string-ez será sempre gratuito para a comunidade. Se quiser contribuir com o projeto, faça um Pix de qualquer valor pelo QR Code ou pelo Pix Copia e Cola.</p>
     <a className="pix-qr-link" href={pixQr} target="_blank" rel="noopener noreferrer" aria-label="Ampliar QR Code Pix para contribuir com o string-ez (abre em nova aba)">
@@ -32,5 +33,6 @@ export default function PixContribution() {
     <p className="micro" role="status">{manualCopy ? 'Não foi possível copiar automaticamente. Selecione e copie o código abaixo.' : copied ? 'Código Pix copiado! No app do seu banco, escolha Pix Copia e Cola e informe o valor que quiser.' : 'No celular, copie o código e use Pix Copia e Cola no app do seu banco.'}</p>
     {manualCopy && <textarea ref={codeField} className="pix-code-field" aria-label="Código Pix para copiar manualmente" readOnly value={pixCode} rows={4} />}
     <p className="micro">Toque no QR Code para ampliar.</p>
+    </div>
   </section>
 }
